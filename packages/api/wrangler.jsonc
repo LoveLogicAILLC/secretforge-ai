@@ -1,0 +1,55 @@
+{
+  "name": "secretforge-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-03-07",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "kv_namespaces": [
+    {
+      "binding": "SECRETS_VAULT",
+      "id": "your-kv-namespace-id",
+      "preview_id": "your-preview-kv-namespace-id"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DATABASE",
+      "database_name": "secretforge-db",
+      "database_id": "your-d1-database-id"
+    }
+  ],
+  "vectorize": [
+    {
+      "binding": "VECTOR_DB",
+      "index_name": "api-docs-index"
+    }
+  ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "your-hyperdrive-id"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "SECRET_AGENT",
+        "class_name": "SecretAgent"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["SecretAgent"]
+    }
+  ],
+  "vars": {
+    "OPENAI_API_KEY": "",
+    "ANTHROPIC_API_KEY": "",
+    "ENCRYPTION_KEY": ""
+  }
+}

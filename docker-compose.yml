@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # Ollama for local AI inference
+  ollama:
+    image: ollama/ollama:latest
+    container_name: secretforge-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_ORIGINS=*
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - secretforge
+
+  # Miniflare for local Cloudflare Workers development
+  miniflare:
+    image: node:20-alpine
+    container_name: secretforge-miniflare
+    working_dir: /app
+    command: sh -c "npm install -g wrangler miniflare && miniflare --watch --live-reload"
+    ports:
+      - "8787:8787"
+    volumes:
+      - ./packages/api:/app
+      - miniflare_cache:/root/.cache
+    environment:
+      - NODE_ENV=development
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-test-encryption-key-32-bytes-long}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    depends_on:
+      - ollama
+    networks:
+      - secretforge
+
+  # PostgreSQL for Hyperdrive testing (optional)
+  postgres:
+    image: postgres:16-alpine
+    container_name: secretforge-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=secretforge
+      - POSTGRES_PASSWORD=secretforge_dev_password
+      - POSTGRES_DB=secretforge
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U secretforge"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - secretforge
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: secretforge-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - secretforge
+
+volumes:
+  ollama_data:
+    driver: local
+  miniflare_cache:
+    driver: local
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  secretforge:
+    driver: bridge

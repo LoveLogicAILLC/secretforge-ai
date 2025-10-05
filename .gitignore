@@ -1,0 +1,63 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.dev.vars
+.secretforge.json
+
+# Cloudflare
+.wrangler/
+wrangler.toml.backup
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+coverage/
+.nyc_output/
+*.lcov
+
+# Turbo
+.turbo/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Secrets (double-check)
+*.key
+*.pem
+*.p12
+credentials.json
+service-account.json
