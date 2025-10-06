@@ -1,8 +1,33 @@
-# SecretForge AI
+# 🛡️ SecretForge AI
 
-**AI-Powered API Key Management & Provisioning Platform**
+<div align="center">
 
-SecretForge AI is an intelligent, edge-native secret management platform that combines agentic AI, Model Context Protocol (MCP), and Cloudflare's infrastructure to automate API key provisioning, rotation, security validation, and lifecycle management.
+![SecretForge Banner](https://img.shields.io/badge/AI--Powered-Secret%20Management-purple?style=for-the-badge)
+[![npm version](https://img.shields.io/npm/v/@secretforge/cli?style=for-the-badge)](https://www.npmjs.com/package/@secretforge/cli)
+[![GitHub stars](https://img.shields.io/github/stars/secretforge/secretforge-ai?style=for-the-badge)](https://github.com/secretforge/secretforge-ai)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
+
+### Stop Committing API Keys Forever
+
+**One command. Zero exposed secrets.**
+
+[Get Started](#quick-start) • [Documentation](#documentation) • [Discord](https://discord.gg/secretforge) • [Twitter](https://twitter.com/SecretForgeAI)
+
+</div>
+
+---
+
+## ⚡ What is SecretForge?
+
+SecretForge AI is an **AI-powered secret management platform** that automatically:
+
+- 🔍 **Detects** required API keys from your project dependencies
+- 🔐 **Provisions** secure keys with optimal scopes
+- 🔄 **Rotates** keys based on AI-powered schedules
+- 🛡️ **Catches** exposed secrets in PRs before they hit production
+- ✅ **Validates** compliance (SOC2, GDPR, HIPAA, PCI-DSS)
+
+**Built with:** Cloudflare Workers + AI Agents + Model Context Protocol
 
 ## Features
 

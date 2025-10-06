@@ -1,0 +1,32 @@
+name: 'SecretForge Shield'
+description: 'AI-powered secret detection and auto-provisioning. Stop committing API keys forever.'
+author: 'SecretForge AI'
+branding:
+  icon: 'shield'
+  color: 'purple'
+
+inputs:
+  github-token:
+    description: 'GitHub token for commenting on PRs'
+    required: true
+  auto-provision:
+    description: 'Automatically provision detected secrets via SecretForge'
+    required: false
+    default: 'false'
+  secretforge-api-key:
+    description: 'SecretForge API key for auto-provisioning'
+    required: false
+  fail-on-secrets:
+    description: 'Fail the check if secrets are detected'
+    required: false
+    default: 'true'
+
+outputs:
+  secrets-found:
+    description: 'Number of secrets detected'
+  provisioned-count:
+    description: 'Number of secrets auto-provisioned'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
