@@ -62,6 +62,11 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/):
 - `test:` Adding tests
 - `refactor:` Code refactoring
 - `chore:` Maintenance tasks
+- `ci:` CI/CD changes
+- `perf:` Performance improvements
+- `style:` Code style changes
+
+**Note**: Commit messages are automatically validated by commitlint via Husky hooks.
 
 ### Push and Create PR
 ```bash
@@ -69,6 +74,27 @@ git push origin feature/your-feature-name
 ```
 
 Then open a Pull Request on GitHub.
+
+## Automated Processes
+
+### Git Hooks (via Husky)
+Pre-commit hooks automatically run on every commit:
+- **lint-staged**: Runs ESLint and Prettier on staged files
+- **Type checking**: Validates TypeScript types
+
+Commit message validation:
+- **commitlint**: Ensures commit messages follow Conventional Commits format
+
+### Dependency Management
+- **Dependabot**: Automatically creates PRs for dependency updates weekly
+- **pnpm audit**: Runs security audits on dependencies in CI
+
+### Code Quality
+- **Codecov**: Tracks code coverage trends and comments on PRs
+- **CodeQL**: Scans for security vulnerabilities and code quality issues
+- **TruffleHog**: Detects secrets and credentials in code
+
+All these processes run automatically - you don't need to configure anything!
 
 ## Project Structure
 
@@ -99,6 +125,12 @@ secretforge-ai/
 - Update README.md for significant changes
 - Include examples in documentation
 
+### Code Style
+- Code is automatically formatted with Prettier on commit (via Husky hooks)
+- ESLint enforces code quality rules
+- Commit messages must follow [Conventional Commits](https://www.conventionalcommits.org/)
+- Pre-commit hooks run linting and formatting automatically
+
 ## Pull Request Guidelines
 
 ### Before Submitting
@@ -109,18 +141,33 @@ secretforge-ai/
 - [ ] Commit messages follow conventions
 
 ### PR Description
-Include:
+Please use the provided PR template when opening a pull request. Include:
 - **What**: Description of changes
 - **Why**: Reason for changes
 - **How**: Implementation approach
 - **Testing**: How you tested the changes
 
 ### Review Process
-- PRs require 1 approval
-- All CI checks must pass
+- PRs require 1 approval (reviewers automatically assigned via CODEOWNERS)
+- All CI checks must pass:
+  - ✅ Linting (ESLint)
+  - ✅ Type checking (TypeScript)
+  - ✅ Tests (with coverage reported to Codecov)
+  - ✅ Build success
+  - ✅ Security scanning (CodeQL, TruffleHog)
 - Address review feedback promptly
+- Code formatting is automatically applied via GitHub Actions
 
 ## Testing
+
+### Automated CI/CD
+Our CI pipeline automatically runs on every push and pull request:
+- **Linting**: ESLint checks for code quality issues
+- **Type Checking**: TypeScript compiler validates types
+- **Tests**: Unit and integration tests with coverage reporting
+- **Security Scanning**: CodeQL and TruffleHog scan for vulnerabilities
+- **Dependency Audits**: pnpm audit checks for known vulnerabilities
+- **Auto-formatting**: Prettier automatically formats code in PRs
 
 ### Unit Tests
 ```bash

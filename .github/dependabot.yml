@@ -1,0 +1,151 @@
+version: 2
+
+updates:
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  # npm dependencies for the monorepo root
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    versioning-strategy: increase
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "@types/*"
+          - "typescript"
+          - "eslint*"
+          - "prettier"
+          - "vitest"
+        update-types:
+          - "minor"
+          - "patch"
+      turbo:
+        patterns:
+          - "turbo"
+
+  # API package dependencies
+  - package-ecosystem: "npm"
+    directory: "/packages/api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "api"
+    versioning-strategy: increase
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  # CLI package dependencies
+  - package-ecosystem: "npm"
+    directory: "/packages/cli"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "cli"
+    versioning-strategy: increase
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  # Web package dependencies
+  - package-ecosystem: "npm"
+    directory: "/packages/web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "web"
+    versioning-strategy: increase
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      next:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # MCP Server package dependencies
+  - package-ecosystem: "npm"
+    directory: "/packages/mcp-server"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "mcp-server"
+    versioning-strategy: increase
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  # Shared package dependencies
+  - package-ecosystem: "npm"
+    directory: "/packages/shared"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "shared"
+    versioning-strategy: increase
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  # GitHub Action package dependencies
+  - package-ecosystem: "npm"
+    directory: "/packages/github-action"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "github-action"
+    versioning-strategy: increase
+    commit-message:
+      prefix: "chore"
+      include: "scope"
