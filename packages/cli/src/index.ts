@@ -14,6 +14,25 @@ interface CLIContext {
   userId: string;
 }
 
+interface SecretResponse {
+  secret: {
+    id: string;
+    service: string;
+    environment: string;
+    value: string;
+    created: string;
+  };
+}
+
+interface SecretsListResponse {
+  secrets: Array<{
+    id: string;
+    service: string;
+    environment: string;
+    created: string;
+  }>;
+}
+
 const program = new Command();
 const ollama = new Ollama({ host: "http://localhost:11434" });
 
@@ -120,7 +139,7 @@ program
       }),
     });
 
-    const data = await response.json();
+    const data = (await response.json()) as SecretResponse;
     spinner.succeed(`API key created: ${data.secret.id}`);
 
     // Update .env file
@@ -154,10 +173,10 @@ program
     const response = await fetch(
       `${context.apiEndpoint}/api/secrets?userId=${context.userId}`
     );
-    const data = await response.json();
+    const data = (await response.json()) as SecretsListResponse;
 
     console.log(chalk.bold("\n🔑 Your API Keys:\n"));
-    data.secrets.forEach((secret: any) => {
+    data.secrets.forEach((secret) => {
       console.log(
         `${chalk.blue(secret.service)} (${chalk.gray(secret.environment)})`
       );
@@ -235,7 +254,7 @@ async function provisionKey(service: string, context: CLIContext) {
       }),
     });
 
-    const data = await response.json();
+    const data = (await response.json()) as SecretResponse;
     await updateEnvFile(`${service.toUpperCase()}_API_KEY`, data.secret.value);
 
     spinner.succeed(`${service} key provisioned`);

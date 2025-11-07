@@ -168,7 +168,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "create_secret": {
         const data = CreateSecretSchema.parse(args);
-        const secret = await createSecret(data);
+        const secret = await createSecret(data) as { id: string };
         return {
           content: [
             {

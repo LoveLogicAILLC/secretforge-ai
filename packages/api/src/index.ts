@@ -9,7 +9,7 @@ interface Env {
   VECTOR_DB: Vectorize;
   DATABASE: D1Database;
   HYPERDRIVE: Hyperdrive;
-  SECRET_AGENT: AgentNamespace<SecretAgent>;
+  SECRET_AGENT: any; // AgentNamespace type not available yet
   OPENAI_API_KEY: string;
   ANTHROPIC_API_KEY: string;
   ENCRYPTION_KEY: string;
@@ -318,7 +318,7 @@ export class SecretAgent extends Agent<Env> {
       messages: [
         {
           role: "system",
-          content: `You are SecretForge AI, an intelligent API key management assistant. Help users provision, rotate, and manage API keys securely. Current context: ${JSON.stringify(await this.getState())}`,
+          content: `You are SecretForge AI, an intelligent API key management assistant. Help users provision, rotate, and manage API keys securely.`,
         },
         { role: "user", content: message },
       ],
@@ -345,19 +345,27 @@ export class SecretAgent extends Agent<Env> {
 
   async processKeyRequest(service: string, environment: string) {
     // Use the agent's state management
+    const currentState = (this as any).state || {};
     await this.setState({
-      ...this.state,
+      ...currentState,
       lastRequest: { service, environment, timestamp: Date.now() },
     });
 
-    // Log to embedded SQLite
-    await this.sql`
-      INSERT INTO key_requests (service, environment, timestamp)
-      VALUES (${service}, ${environment}, ${Date.now()})
-    `;
+    // Log to embedded SQLite (when available)
+    try {
+      const sql = (this as any).sql;
+      if (sql) {
+        await sql`
+          INSERT INTO key_requests (service, environment, timestamp)
+          VALUES (${service}, ${environment}, ${Date.now()})
+        `;
+      }
+    } catch (error) {
+      console.error("Failed to log to SQL:", error);
+    }
   }
 
-  onStateUpdate(state: any, source: string) {
+  onStateUpdate(state: unknown, source: any) {
     console.log("Agent state updated:", { state, source });
   }
 }
