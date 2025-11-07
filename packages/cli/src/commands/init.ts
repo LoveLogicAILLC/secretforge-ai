@@ -63,7 +63,7 @@ export async function initCommand(): Promise<void> {
 
     // Generate encryption key if not exists
     if (!process.env.SECRETFORGE_ENCRYPTION_KEY) {
-      const encryptionKey = generateEncryptionKey();
+      const encryptionKey = await generateEncryptionKey();
       spinner.info(
         `Generated encryption key. Add this to your environment:\n\n${chalk.cyan(
           `export SECRETFORGE_ENCRYPTION_KEY="${encryptionKey}"`

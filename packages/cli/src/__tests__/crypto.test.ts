@@ -8,21 +8,21 @@ describe('CryptoProvider', () => {
   let encryptionKey: string;
   let cryptoProvider: DefaultCryptoProvider;
 
-  beforeEach(() => {
-    encryptionKey = generateEncryptionKey();
+  beforeEach(async () => {
+    encryptionKey = await generateEncryptionKey();
     cryptoProvider = new DefaultCryptoProvider(encryptionKey);
   });
 
   describe('generateEncryptionKey', () => {
-    it('should generate a 32-byte base64 key', () => {
-      const key = generateEncryptionKey();
+    it('should generate a 32-byte base64 key', async () => {
+      const key = await generateEncryptionKey();
       const buffer = Buffer.from(key, 'base64');
       expect(buffer.length).toBe(32);
     });
 
-    it('should generate unique keys', () => {
-      const key1 = generateEncryptionKey();
-      const key2 = generateEncryptionKey();
+    it('should generate unique keys', async () => {
+      const key1 = await generateEncryptionKey();
+      const key2 = await generateEncryptionKey();
       expect(key1).not.toBe(key2);
     });
   });
@@ -91,7 +91,7 @@ describe('CryptoProvider', () => {
       const plaintext = 'my-secret-value';
       const encrypted = await cryptoProvider.encrypt(plaintext);
 
-      const wrongKey = generateEncryptionKey();
+      const wrongKey = await generateEncryptionKey();
       const wrongProvider = new DefaultCryptoProvider(wrongKey);
 
       await expect(wrongProvider.decrypt(encrypted)).rejects.toThrow();

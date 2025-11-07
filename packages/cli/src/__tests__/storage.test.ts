@@ -11,7 +11,7 @@ describe('SecretStorage', () => {
   let dbPath: string;
 
   beforeEach(async () => {
-    const encryptionKey = generateEncryptionKey();
+    const encryptionKey = await generateEncryptionKey();
     cryptoProvider = new DefaultCryptoProvider(encryptionKey);
     dbPath = join(tmpdir(), `test-secrets-${Date.now()}.db`);
     storage = new SQLiteSecretStorage(dbPath, cryptoProvider);

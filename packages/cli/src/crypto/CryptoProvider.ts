@@ -96,7 +96,7 @@ export class DefaultCryptoProvider implements CryptoProvider {
  * Generate a new encryption key for use with the CryptoProvider
  * @returns A base64-encoded 32-byte encryption key
  */
-export function generateEncryptionKey(): string {
-  const crypto = require('crypto');
+export async function generateEncryptionKey(): Promise<string> {
+  const crypto = await import('crypto');
   return crypto.randomBytes(32).toString('base64');
 }

@@ -83,12 +83,13 @@ export class SQLiteSecretStorage implements SecretStorage {
 
   constructor(dbPath: string, cryptoProvider: CryptoProvider) {
     this.cryptoProvider = cryptoProvider;
-    const Database = require('better-sqlite3');
-    this.db = new Database(dbPath);
-    this.initDatabase();
+    this.initDatabase(dbPath);
   }
 
-  private initDatabase(): void {
+  private initDatabase(dbPath: string): void {
+    // Use dynamic import for ES module compatibility
+    const Database = require('better-sqlite3');
+    this.db = new Database(dbPath);
     // Create secrets table
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS secrets (
@@ -248,7 +249,9 @@ export class SQLiteSecretStorage implements SecretStorage {
   }
 
   private generateId(): string {
-    return `sec_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    // Use crypto.randomUUID() for cryptographically secure IDs
+    const crypto = require('crypto');
+    return `sec_${crypto.randomUUID().replace(/-/g, '')}`;
   }
 
   close(): void {
