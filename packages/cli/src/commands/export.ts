@@ -64,7 +64,9 @@ export async function exportCommand(options: {
       case 'yaml':
         console.log('# SecretForge export');
         for (const [key, value] of Object.entries(decryptedSecrets)) {
-          console.log(`${key}: "${value.replace(/"/g, '\\"')}"`);
+          // Escape quotes and backslashes for YAML
+          const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+          console.log(`${key}: "${escaped}"`);
         }
         break;
 
@@ -73,7 +75,13 @@ export async function exportCommand(options: {
         for (const [key, value] of Object.entries(decryptedSecrets)) {
           // Escape value if needed
           const needsQuotes = /[\s#]/.test(value);
-          console.log(`${key}=${needsQuotes ? `"${value.replace(/"/g, '\\"')}"` : value}`);
+          if (needsQuotes) {
+            // Escape quotes and backslashes for shell
+            const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+            console.log(`${key}="${escaped}"`);
+          } else {
+            console.log(`${key}=${value}`);
+          }
         }
         break;
     }

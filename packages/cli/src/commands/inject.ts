@@ -87,7 +87,13 @@ export async function injectCommand(options: { env: string; file?: string }): Pr
     for (const [key, value] of existingVars.entries()) {
       // Escape value if it contains special characters
       const needsQuotes = /[\s#]/.test(value);
-      lines.push(`${key}=${needsQuotes ? `"${value.replace(/"/g, '\\"')}"` : value}`);
+      if (needsQuotes) {
+        // Escape quotes and backslashes for shell
+        const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        lines.push(`${key}="${escaped}"`);
+      } else {
+        lines.push(`${key}=${value}`);
+      }
     }
 
     // Write to file
