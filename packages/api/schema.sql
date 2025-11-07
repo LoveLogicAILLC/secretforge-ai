@@ -1,21 +1,21 @@
 -- SecretForge AI Database Schema
 -- D1 (SQLite) schema for metadata and audit logs
 
--- Secrets metadata table
+-- Secrets metadata table (Phase 1)
 CREATE TABLE IF NOT EXISTS secrets (
     id TEXT PRIMARY KEY,
-    service TEXT NOT NULL,
+    name TEXT NOT NULL,
+    project TEXT NOT NULL,
     environment TEXT NOT NULL CHECK(environment IN ('dev', 'staging', 'prod')),
-    user_id TEXT NOT NULL,
-    scopes TEXT, -- JSON array
+    tags TEXT NOT NULL DEFAULT '[]', -- JSON array
+    value_encrypted TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    last_rotated_at TEXT,
-    rotation_policy_days INTEGER DEFAULT 90,
-    is_active BOOLEAN DEFAULT 1
+    updated_at TEXT NOT NULL,
+    UNIQUE(name, project, environment)
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_service ON secrets(user_id, service);
-CREATE INDEX IF NOT EXISTS idx_environment ON secrets(environment);
+CREATE INDEX IF NOT EXISTS idx_project_env ON secrets(project, environment);
+CREATE INDEX IF NOT EXISTS idx_name ON secrets(name);
 CREATE INDEX IF NOT EXISTS idx_created_at ON secrets(created_at);
 
 -- Audit log for all secret operations

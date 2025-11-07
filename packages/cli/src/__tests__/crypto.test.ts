@@ -29,7 +29,10 @@ describe('CryptoProvider', () => {
 
   describe('DefaultCryptoProvider', () => {
     it('should throw if no encryption key provided', () => {
-      expect(() => new DefaultCryptoProvider('')).toThrow('Encryption key not provided');
+      const oldEnv = process.env.SECRETFORGE_ENCRYPTION_KEY;
+      delete process.env.SECRETFORGE_ENCRYPTION_KEY;
+      expect(() => new DefaultCryptoProvider()).toThrow('Encryption key not provided');
+      process.env.SECRETFORGE_ENCRYPTION_KEY = oldEnv;
     });
 
     it('should throw if encryption key is not 32 bytes', () => {
