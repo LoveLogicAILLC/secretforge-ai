@@ -1,8 +1,23 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { HTTPException } from "hono/http-exception";
 import { Agent } from "agents";
 import { OpenAI } from "openai";
 import postgres from "postgres";
+import { encryptSecret, decryptSecret, validateMasterKey, testEncryption } from "./crypto";
+import { authMiddleware, generateApiKey as createUserApiKey } from "./middleware/auth";
+import {
+  validateBody,
+  validateQuery,
+  validateParams,
+  CreateSecretSchema,
+  AnalyzeProjectSchema,
+  SearchDocsSchema,
+  ValidateComplianceSchema,
+  AgentChatSchema,
+  SecretIdSchema,
+} from "./middleware/validation";
+import { rateLimitMiddleware, burstProtectionMiddleware } from "./middleware/ratelimit";
 
 interface Env {
   SECRETS_VAULT: KVNamespace;
@@ -27,149 +42,310 @@ interface Secret {
 
 const app = new Hono<{ Bindings: Env }>();
 
+// Global middleware
 app.use("*", cors());
+app.use("*", burstProtectionMiddleware()); // Prevent spike attacks
+app.use("*", rateLimitMiddleware()); // General rate limiting
 
-// Health check
-app.get("/health", (c) => {
-  return c.json({ status: "healthy", timestamp: new Date().toISOString() });
+// Validate encryption key on startup
+app.use("*", async (c, next) => {
+  const validation = validateMasterKey(c.env.ENCRYPTION_KEY);
+  if (!validation.valid) {
+    throw new HTTPException(500, {
+      message: `Invalid encryption key: ${validation.reason}`,
+    });
+  }
+  await next();
+});
+
+// Apply authentication to all /api/* routes
+app.use("/api/*", authMiddleware);
+
+// Health check (public endpoint)
+app.get("/health", async (c) => {
+  // Test encryption to ensure system is healthy
+  const encryptionHealthy = await testEncryption(c.env.ENCRYPTION_KEY);
+
+  return c.json({
+    status: encryptionHealthy ? "healthy" : "degraded",
+    timestamp: new Date().toISOString(),
+    checks: {
+      encryption: encryptionHealthy,
+      database: !!c.env.DATABASE,
+      kv: !!c.env.SECRETS_VAULT,
+      vectorize: !!c.env.VECTOR_DB,
+    },
+  });
 });
 
 // Analyze project endpoint
-app.post("/api/analyze", async (c) => {
-  const { projectPath, dependencies } = await c.req.json();
+app.post("/api/analyze", validateBody(AnalyzeProjectSchema), async (c) => {
+  try {
+    const { projectPath, dependencies } = c.get("validatedBody");
+    const userId = c.get("userId");
 
-  const detectedServices = analyzeDependencies(dependencies);
-  const recommendations = await getRecommendations(c.env, detectedServices);
+    const detectedServices = analyzeDependencies(dependencies);
+    const recommendations = await getRecommendations(c.env, detectedServices);
 
-  return c.json({
-    detectedServices,
-    recommendations,
-    missingKeys: await findMissingKeys(c.env, detectedServices),
-  });
+    return c.json({
+      detectedServices,
+      recommendations,
+      missingKeys: await findMissingKeys(c.env, detectedServices, userId),
+    });
+  } catch (error) {
+    console.error("Analyze project error:", error);
+    throw new HTTPException(500, {
+      message: "Failed to analyze project dependencies",
+    });
+  }
 });
 
 // Create secret
-app.post("/api/secrets", async (c) => {
-  const { service, environment, scopes, userId } = await c.req.json();
+app.post("/api/secrets", validateBody(CreateSecretSchema), async (c) => {
+  try {
+    const { service, environment, scopes, value } = c.get("validatedBody");
+    const userId = c.get("userId"); // From auth middleware
 
-  const secretId = crypto.randomUUID();
-  const encryptedValue = await encryptSecret(
-    c.env.ENCRYPTION_KEY,
-    await generateApiKey(service)
-  );
+    const secretId = crypto.randomUUID();
 
-  const secret: Secret = {
-    id: secretId,
-    service,
-    environment,
-    scopes: scopes || [],
-    created: new Date().toISOString(),
-    userId,
-  };
+    // Generate or use provided API key value
+    const secretValue = value || await generateApiKey(service);
+    const encryptedValue = await encryptSecret(c.env.ENCRYPTION_KEY, secretValue);
 
-  await c.env.SECRETS_VAULT.put(
-    `secret:${secretId}`,
-    JSON.stringify({ ...secret, value: encryptedValue }),
-    {
-      metadata: { service, environment, userId },
-    }
-  );
+    const secret: Secret = {
+      id: secretId,
+      service,
+      environment,
+      scopes: scopes || [],
+      created: new Date().toISOString(),
+      userId,
+    };
 
-  // Store metadata in D1
-  await c.env.DATABASE.prepare(
-    `INSERT INTO secrets (id, service, environment, user_id, created_at) VALUES (?, ?, ?, ?, ?)`
-  )
-    .bind(secretId, service, environment, userId, secret.created)
-    .run();
+    // Store encrypted secret in KV
+    await c.env.SECRETS_VAULT.put(
+      `secret:${secretId}`,
+      JSON.stringify({ ...secret, value: encryptedValue }),
+      {
+        metadata: { service, environment, userId },
+      }
+    );
 
-  return c.json({ secret: { ...secret, value: "[ENCRYPTED]" } }, 201);
+    // Store metadata in D1
+    await c.env.DATABASE.prepare(
+      `INSERT INTO secrets (id, service, environment, user_id, created_at) VALUES (?, ?, ?, ?, ?)`
+    )
+      .bind(secretId, service, environment, userId, secret.created)
+      .run();
+
+    // Log creation in audit trail
+    await c.env.DATABASE.prepare(
+      `INSERT INTO audit_logs (user_id, action, resource_type, resource_id, timestamp)
+       VALUES (?, ?, ?, ?, ?)`
+    )
+      .bind(userId, "create_secret", "secret", secretId, secret.created)
+      .run();
+
+    return c.json({ secret: { ...secret, value: "[ENCRYPTED]" } }, 201);
+  } catch (error) {
+    console.error("Create secret error:", error);
+    throw new HTTPException(500, {
+      message: "Failed to create secret",
+    });
+  }
 });
 
 // Get secret
-app.get("/api/secrets/:id", async (c) => {
-  const secretId = c.req.param("id");
-  const secretData = await c.env.SECRETS_VAULT.get(`secret:${secretId}`);
+app.get("/api/secrets/:id", validateParams(SecretIdSchema), async (c) => {
+  try {
+    const { id: secretId } = c.get("validatedParams");
+    const userId = c.get("userId");
 
-  if (!secretData) {
-    return c.json({ error: "Secret not found" }, 404);
+    const secretData = await c.env.SECRETS_VAULT.get(`secret:${secretId}`);
+
+    if (!secretData) {
+      throw new HTTPException(404, {
+        message: "Secret not found",
+      });
+    }
+
+    const secret = JSON.parse(secretData);
+
+    // Verify ownership
+    if (secret.userId !== userId) {
+      throw new HTTPException(403, {
+        message: "Unauthorized to access this secret",
+      });
+    }
+
+    const decryptedValue = await decryptSecret(c.env.ENCRYPTION_KEY, secret.value);
+
+    // Log access
+    await c.env.DATABASE.prepare(
+      `INSERT INTO audit_logs (user_id, action, resource_type, resource_id, timestamp)
+       VALUES (?, ?, ?, ?, ?)`
+    )
+      .bind(userId, "read_secret", "secret", secretId, new Date().toISOString())
+      .run();
+
+    return c.json({
+      ...secret,
+      value: decryptedValue,
+    });
+  } catch (error) {
+    if (error instanceof HTTPException) throw error;
+    console.error("Get secret error:", error);
+    throw new HTTPException(500, {
+      message: "Failed to retrieve secret",
+    });
   }
-
-  const secret = JSON.parse(secretData);
-  const decryptedValue = await decryptSecret(c.env.ENCRYPTION_KEY, secret.value);
-
-  return c.json({
-    ...secret,
-    value: decryptedValue,
-  });
 });
 
 // Rotate secret
-app.post("/api/secrets/:id/rotate", async (c) => {
-  const secretId = c.req.param("id");
-  const secretData = await c.env.SECRETS_VAULT.get(`secret:${secretId}`);
+app.post("/api/secrets/:id/rotate", validateParams(SecretIdSchema), async (c) => {
+  try {
+    const { id: secretId } = c.get("validatedParams");
+    const userId = c.get("userId");
 
-  if (!secretData) {
-    return c.json({ error: "Secret not found" }, 404);
+    const secretData = await c.env.SECRETS_VAULT.get(`secret:${secretId}`);
+
+    if (!secretData) {
+      throw new HTTPException(404, {
+        message: "Secret not found",
+      });
+    }
+
+    const secret = JSON.parse(secretData);
+
+    // Verify ownership
+    if (secret.userId !== userId) {
+      throw new HTTPException(403, {
+        message: "Unauthorized to rotate this secret",
+      });
+    }
+
+    // Generate new API key value
+    const newValue = await generateApiKey(secret.service);
+    const encryptedValue = await encryptSecret(c.env.ENCRYPTION_KEY, newValue);
+
+    secret.value = encryptedValue;
+    secret.lastRotated = new Date().toISOString();
+
+    // Update in KV
+    await c.env.SECRETS_VAULT.put(`secret:${secretId}`, JSON.stringify(secret));
+
+    // Update in D1
+    await c.env.DATABASE.prepare(
+      `UPDATE secrets SET last_rotated = ? WHERE id = ?`
+    )
+      .bind(secret.lastRotated, secretId)
+      .run();
+
+    // Log rotation
+    await c.env.DATABASE.prepare(
+      `INSERT INTO audit_logs (user_id, action, resource_type, resource_id, timestamp)
+       VALUES (?, ?, ?, ?, ?)`
+    )
+      .bind(userId, "rotate_secret", "secret", secretId, secret.lastRotated)
+      .run();
+
+    return c.json({
+      message: "Secret rotated successfully",
+      id: secretId,
+      lastRotated: secret.lastRotated,
+    });
+  } catch (error) {
+    if (error instanceof HTTPException) throw error;
+    console.error("Rotate secret error:", error);
+    throw new HTTPException(500, {
+      message: "Failed to rotate secret",
+    });
   }
-
-  const secret = JSON.parse(secretData);
-  const newValue = await generateApiKey(secret.service);
-  const encryptedValue = await encryptSecret(c.env.ENCRYPTION_KEY, newValue);
-
-  secret.value = encryptedValue;
-  secret.lastRotated = new Date().toISOString();
-
-  await c.env.SECRETS_VAULT.put(`secret:${secretId}`, JSON.stringify(secret));
-
-  return c.json({ message: "Secret rotated successfully", id: secretId });
 });
 
 // Search documentation
-app.get("/api/docs/search", async (c) => {
-  const service = c.req.query("service");
-  const query = c.req.query("q");
+app.get("/api/docs/search", validateQuery(SearchDocsSchema), async (c) => {
+  try {
+    const { service, q, limit } = c.get("validatedQuery");
 
-  if (!service || !query) {
-    return c.json({ error: "Missing service or query" }, 400);
+    // Generate embedding for query
+    const embedding = await generateEmbedding(c.env, q);
+
+    // Search vector database
+    const results = await c.env.VECTOR_DB.query(embedding, {
+      topK: limit || 5,
+      filter: { service },
+    });
+
+    return c.json({
+      results: results.matches,
+      query: q,
+      service,
+    });
+  } catch (error) {
+    console.error("Search documentation error:", error);
+    throw new HTTPException(500, {
+      message: "Failed to search documentation",
+    });
   }
-
-  // Generate embedding for query
-  const embedding = await generateEmbedding(c.env, query);
-
-  // Search vector database
-  const results = await c.env.VECTOR_DB.query(embedding, {
-    topK: 5,
-    filter: { service },
-  });
-
-  return c.json({ results: results.matches });
 });
 
 // Validate security compliance
-app.get("/api/secrets/:id/validate", async (c) => {
-  const secretId = c.req.param("id");
-  const framework = c.req.query("framework");
+app.get("/api/secrets/:id/validate", validateParams(SecretIdSchema), validateQuery(ValidateComplianceSchema), async (c) => {
+  try {
+    const { id: secretId } = c.get("validatedParams");
+    const { framework } = c.get("validatedQuery");
+    const userId = c.get("userId");
 
-  const validation = await validateCompliance(c.env, secretId, framework || "SOC2");
+    // Verify ownership
+    const secretData = await c.env.SECRETS_VAULT.get(`secret:${secretId}`);
+    if (!secretData) {
+      throw new HTTPException(404, {
+        message: "Secret not found",
+      });
+    }
 
-  return c.json(validation);
+    const secret = JSON.parse(secretData);
+    if (secret.userId !== userId) {
+      throw new HTTPException(403, {
+        message: "Unauthorized to validate this secret",
+      });
+    }
+
+    const validation = await validateCompliance(c.env, secretId, framework);
+
+    return c.json(validation);
+  } catch (error) {
+    if (error instanceof HTTPException) throw error;
+    console.error("Validate compliance error:", error);
+    throw new HTTPException(500, {
+      message: "Failed to validate compliance",
+    });
+  }
 });
 
 // AI Agent endpoint
-app.post("/api/agent/chat", async (c) => {
-  const { message, userId } = await c.req.json();
+app.post("/api/agent/chat", validateBody(AgentChatSchema), async (c) => {
+  try {
+    const { message, context } = c.get("validatedBody");
+    const userId = c.get("userId"); // From auth middleware
 
-  const agent = c.env.SECRET_AGENT.get(c.env.SECRET_AGENT.idFromName(userId));
-  const response = await agent.fetch(
-    new Request("http://agent/chat", {
-      method: "POST",
-      body: JSON.stringify({ message }),
-    })
-  );
+    const agent = c.env.SECRET_AGENT.get(c.env.SECRET_AGENT.idFromName(userId));
+    const response = await agent.fetch(
+      new Request("http://agent/chat", {
+        method: "POST",
+        body: JSON.stringify({ message, context }),
+      })
+    );
 
-  return new Response(response.body, {
-    headers: { "Content-Type": "text/event-stream" },
-  });
+    return new Response(response.body, {
+      headers: { "Content-Type": "text/event-stream" },
+    });
+  } catch (error) {
+    console.error("Agent chat error:", error);
+    throw new HTTPException(500, {
+      message: "Failed to process agent chat",
+    });
+  }
 });
 
 // Helper functions
@@ -214,60 +390,18 @@ async function getRecommendations(env: Env, services: string[]) {
   return response.choices[0].message.content;
 }
 
-async function findMissingKeys(env: Env, services: string[]): Promise<string[]> {
+async function findMissingKeys(env: Env, services: string[], userId: string): Promise<string[]> {
   const existing = await env.DATABASE.prepare(
     `SELECT DISTINCT service FROM secrets WHERE user_id = ?`
   )
-    .bind("current-user") // In production, use actual user ID
+    .bind(userId)
     .all();
 
   const existingServices = existing.results.map((r: any) => r.service);
   return services.filter((s) => !existingServices.includes(s));
 }
 
-async function encryptSecret(key: string, value: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(value);
-
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(key),
-    { name: "AES-GCM" },
-    false,
-    ["encrypt"]
-  );
-
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, cryptoKey, data);
-
-  return btoa(
-    JSON.stringify({
-      iv: Array.from(iv),
-      data: Array.from(new Uint8Array(encrypted)),
-    })
-  );
-}
-
-async function decryptSecret(key: string, encryptedValue: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const { iv, data } = JSON.parse(atob(encryptedValue));
-
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(key),
-    { name: "AES-GCM" },
-    false,
-    ["decrypt"]
-  );
-
-  const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: new Uint8Array(iv) },
-    cryptoKey,
-    new Uint8Array(data)
-  );
-
-  return new TextDecoder().decode(decrypted);
-}
+// Encryption functions moved to ./crypto.ts for better maintainability and security
 
 async function generateApiKey(service: string): Promise<string> {
   // Generate secure random API key
