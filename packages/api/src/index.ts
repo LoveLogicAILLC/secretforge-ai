@@ -365,7 +365,7 @@ export class SecretAgent extends Agent<Env> {
     }
   }
 
-  onStateUpdate(state: unknown, source: any) {
+  onStateUpdate(state: unknown, source: unknown) {
     console.log("Agent state updated:", { state, source });
   }
 }
