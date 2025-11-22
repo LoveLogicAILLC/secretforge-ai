@@ -168,7 +168,7 @@ async function provisionSecrets(
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json() as { secret: { id: string } };
       results.push({
         service: secret.service,
         environment: 'production',

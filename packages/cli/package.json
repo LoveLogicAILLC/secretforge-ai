@@ -1,6 +1,31 @@
 {
   "name": "@secretforge/cli",
   "version": "1.0.0",
+  "description": "The official CLI for SecretForge AI - Automatically detect, provision, and rotate API keys.",
+  "keywords": [
+    "security",
+    "secrets",
+    "api-keys",
+    "rotation",
+    "ai",
+    "automation",
+    "devops",
+    "secretforge"
+  ],
+  "author": "SecretForge AI <founder@secretforge.ai>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/secretforge/secretforge-ai.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/secretforge/secretforge-ai/issues"
+  },
+  "homepage": "https://secretforge.ai",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "bin": {
     "secretforge": "./dist/index.js"
