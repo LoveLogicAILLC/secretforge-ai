@@ -1,0 +1,41 @@
+# CODEOWNERS - Automatically request reviews from code owners
+
+# Global owners - will be requested for review on all PRs unless a specific rule below takes precedence
+* @LoveLogicAILLC/secretforge-maintainers
+
+# Core packages
+/packages/api/ @LoveLogicAILLC/backend-team
+/packages/cli/ @LoveLogicAILLC/cli-team
+/packages/web/ @LoveLogicAILLC/frontend-team
+/packages/mcp-server/ @LoveLogicAILLC/backend-team
+/packages/shared/ @LoveLogicAILLC/secretforge-maintainers
+/packages/github-action/ @LoveLogicAILLC/devops-team
+
+# Infrastructure and deployment
+/.github/ @LoveLogicAILLC/devops-team
+/docker-compose.yml @LoveLogicAILLC/devops-team
+/scripts/ @LoveLogicAILLC/devops-team
+*.yml @LoveLogicAILLC/devops-team
+*.yaml @LoveLogicAILLC/devops-team
+wrangler.toml @LoveLogicAILLC/devops-team
+
+# Configuration files
+/turbo.json @LoveLogicAILLC/devops-team
+/tsconfig.json @LoveLogicAILLC/secretforge-maintainers
+/.eslintrc.json @LoveLogicAILLC/secretforge-maintainers
+/.prettierrc.json @LoveLogicAILLC/secretforge-maintainers
+/commitlint.config.js @LoveLogicAILLC/secretforge-maintainers
+/.lintstagedrc.json @LoveLogicAILLC/secretforge-maintainers
+/pnpm-workspace.yaml @LoveLogicAILLC/secretforge-maintainers
+
+# Documentation
+*.md @LoveLogicAILLC/documentation-team
+/docs/ @LoveLogicAILLC/documentation-team
+
+# Security sensitive files
+/.github/workflows/security.yml @LoveLogicAILLC/security-team
+/packages/github-action/ @LoveLogicAILLC/security-team
+
+# Package manifests
+package.json @LoveLogicAILLC/secretforge-maintainers
+pnpm-lock.yaml @LoveLogicAILLC/secretforge-maintainers

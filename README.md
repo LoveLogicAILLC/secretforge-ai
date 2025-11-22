@@ -7,6 +7,11 @@
 [![GitHub stars](https://img.shields.io/github/stars/secretforge/secretforge-ai?style=for-the-badge)](https://github.com/secretforge/secretforge-ai)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=for-the-badge)](LICENSE)
 
+[![CI](https://github.com/LoveLogicAILLC/secretforge-ai/workflows/CI/badge.svg)](https://github.com/LoveLogicAILLC/secretforge-ai/actions/workflows/ci.yml)
+[![Security](https://github.com/LoveLogicAILLC/secretforge-ai/workflows/Security/badge.svg)](https://github.com/LoveLogicAILLC/secretforge-ai/actions/workflows/security.yml)
+[![codecov](https://codecov.io/gh/LoveLogicAILLC/secretforge-ai/branch/main/graph/badge.svg)](https://codecov.io/gh/LoveLogicAILLC/secretforge-ai)
+[![Code Quality](https://img.shields.io/badge/code%20quality-automated-brightgreen)](https://github.com/LoveLogicAILLC/secretforge-ai/blob/main/.github/workflows/ci.yml)
+
 ### Stop Committing API Keys Forever
 
 **One command. Zero exposed secrets.**
