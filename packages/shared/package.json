@@ -1,6 +1,26 @@
 {
   "name": "@secretforge/shared",
   "version": "1.0.0",
+  "description": "Shared utilities and types for SecretForge AI",
+  "keywords": [
+    "secretforge",
+    "shared",
+    "types",
+    "utils"
+  ],
+  "author": "SecretForge AI <hello@secretforge.ai>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/secretforge/secretforge-ai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/secretforge/secretforge-ai/issues"
+  },
+  "homepage": "https://secretforge.ai",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
