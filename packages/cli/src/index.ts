@@ -120,7 +120,7 @@ program
       }),
     });
 
-    const data = await response.json();
+    const data = await response.json() as any;
     spinner.succeed(`API key created: ${data.secret.id}`);
 
     // Update .env file
@@ -154,7 +154,7 @@ program
     const response = await fetch(
       `${context.apiEndpoint}/api/secrets?userId=${context.userId}`
     );
-    const data = await response.json();
+    const data = await response.json() as any;
 
     console.log(chalk.bold("\n🔑 Your API Keys:\n"));
     data.secrets.forEach((secret: any) => {
@@ -235,7 +235,7 @@ async function provisionKey(service: string, context: CLIContext) {
       }),
     });
 
-    const data = await response.json();
+    const data = await response.json() as any;
     await updateEnvFile(`${service.toUpperCase()}_API_KEY`, data.secret.value);
 
     spinner.succeed(`${service} key provisioned`);
