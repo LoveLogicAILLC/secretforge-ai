@@ -1,0 +1,177 @@
+name: Terraform Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infrastructure/terraform/**'
+      - '.github/workflows/terraform.yml'
+  pull_request:
+    paths:
+      - 'infrastructure/terraform/**'
+      - '.github/workflows/terraform.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+        default: 'staging'
+
+concurrency:
+  group: terraform-${{ github.event.inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+jobs:
+  terraform:
+    name: Terraform ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
+    
+    defaults:
+      run:
+        working-directory: infrastructure/terraform
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+          terraform_wrapper: false
+      
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        continue-on-error: true
+      
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TERRAFORM_STATE_BUCKET }}" \
+            -backend-config="key=${{ vars.ENVIRONMENT }}/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION || 'us-east-1' }}"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.TERRAFORM_STATE_AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TERRAFORM_STATE_AWS_SECRET_KEY }}
+      
+      - name: Terraform Validate
+        run: terraform validate
+      
+      - name: Terraform Plan
+        id: plan
+        run: |
+          terraform plan \
+            -var="environment=${{ vars.ENVIRONMENT }}" \
+            -var="git_sha=${{ github.sha }}" \
+            -out=tfplan \
+            -no-color
+        env:
+          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          TF_VAR_anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          TF_VAR_encryption_key: ${{ secrets.ENCRYPTION_KEY }}
+          TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN }}
+          TF_VAR_logpush_destination: ${{ vars.LOGPUSH_DESTINATION }}
+      
+      - name: Upload Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ vars.ENVIRONMENT }}
+          path: infrastructure/terraform/tfplan
+          retention-days: 7
+      
+      - name: Comment Plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('infrastructure/terraform/tfplan.txt', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Terraform Plan - ${{ vars.ENVIRONMENT }}\n\`\`\`hcl\n${plan}\n\`\`\``
+            });
+      
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        run: terraform apply -auto-approve tfplan
+        env:
+          TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+          TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          TF_VAR_anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          TF_VAR_encryption_key: ${{ secrets.ENCRYPTION_KEY }}
+          TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN }}
+          TF_VAR_logpush_destination: ${{ vars.LOGPUSH_DESTINATION }}
+      
+      - name: Export Outputs
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        id: outputs
+        run: |
+          echo "worker_url=$(terraform output -raw worker_url)" >> $GITHUB_OUTPUT
+          echo "health_check_url=$(terraform output -raw health_check_url)" >> $GITHUB_OUTPUT
+          echo "d1_database_id=$(terraform output -raw d1_database_id)" >> $GITHUB_OUTPUT
+      
+      - name: Health Check
+        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        run: |
+          echo "Waiting 30s for infrastructure to stabilize..."
+          sleep 30
+          
+          max_attempts=10
+          attempt=0
+          
+          while [ $attempt -lt $max_attempts ]; do
+            echo "Attempt $((attempt + 1))/$max_attempts: Checking health..."
+            
+            if curl -f -s "${{ steps.outputs.outputs.health_check_url }}" | jq -e '.status == "healthy"' > /dev/null; then
+              echo "✅ Infrastructure healthy!"
+              exit 0
+            fi
+            
+            attempt=$((attempt + 1))
+            sleep 10
+          done
+          
+          echo "❌ Health check failed after $max_attempts attempts"
+          exit 1
+      
+      - name: Notify Success
+        if: success() && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'success',
+              context: 'infrastructure/${{ vars.ENVIRONMENT }}',
+              description: 'Infrastructure deployed successfully',
+              target_url: '${{ steps.outputs.outputs.worker_url }}'
+            });
+      
+      - name: Notify Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: 'failure',
+              context: 'infrastructure/${{ vars.ENVIRONMENT }}',
+              description: 'Infrastructure deployment failed'
+            });

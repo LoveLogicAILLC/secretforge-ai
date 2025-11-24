@@ -12,6 +12,11 @@
     --popover-foreground: 222.2 84% 4.9%;
     --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
+    --primary-soft: 222 100% 66%;
+    --accent-strong: 199 89% 48%;
+    --neutral-50: 210 60% 98%;
+    --neutral-100: 210 45% 96%;
+    --neutral-200: 215 32% 91%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
@@ -24,6 +29,14 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
+    --radius-pill: 40px;
+    --shadow-soft: 0px 18px 45px rgba(15, 23, 42, 0.08);
+    --shadow-focus: 0px 10px 30px rgba(59, 130, 246, 0.4);
+    --shadow-overlay: 0px 30px 65px rgba(15, 23, 42, 0.28);
+    --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: 160ms;
+    --transition-medium: 220ms;
   }
 
   .dark {
@@ -35,6 +48,11 @@
     --popover-foreground: 210 40% 98%;
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-soft: 217 95% 65%;
+    --accent-strong: 199 89% 58%;
+    --neutral-50: 215 30% 7%;
+    --neutral-100: 218 25% 12%;
+    --neutral-200: 220 20% 18%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
@@ -46,6 +64,14 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
+    --radius-pill: 40px;
+    --shadow-soft: 0px 25px 60px rgba(0, 0, 0, 0.45);
+    --shadow-focus: 0px 12px 40px rgba(99, 102, 241, 0.55);
+    --shadow-overlay: 0px 35px 80px rgba(0, 0, 0, 0.65);
+    --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: 160ms;
+    --transition-medium: 220ms;
   }
 }
 
