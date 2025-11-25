@@ -9,7 +9,7 @@ interface Env {
   VECTOR_DB: Vectorize;
   DATABASE: D1Database;
   HYPERDRIVE: Hyperdrive;
-  SECRET_AGENT: AgentNamespace<SecretAgent>;
+  SECRET_AGENT: any; // AgentNamespace<SecretAgent>
   OPENAI_API_KEY: string;
   ANTHROPIC_API_KEY: string;
   ENCRYPTION_KEY: string;
@@ -318,7 +318,7 @@ export class SecretAgent extends Agent<Env> {
       messages: [
         {
           role: "system",
-          content: `You are SecretForge AI, an intelligent API key management assistant. Help users provision, rotate, and manage API keys securely. Current context: ${JSON.stringify(await this.getState())}`,
+          content: `You are SecretForge AI, an intelligent API key management assistant. Help users provision, rotate, and manage API keys securely. Current context: ${JSON.stringify(this.state || {})}`,
         },
         { role: "user", content: message },
       ],
@@ -345,8 +345,9 @@ export class SecretAgent extends Agent<Env> {
 
   async processKeyRequest(service: string, environment: string) {
     // Use the agent's state management
+    const currentState = (this.state || {}) as Record<string, any>;
     await this.setState({
-      ...this.state,
+      ...currentState,
       lastRequest: { service, environment, timestamp: Date.now() },
     });
 
@@ -357,7 +358,7 @@ export class SecretAgent extends Agent<Env> {
     `;
   }
 
-  onStateUpdate(state: any, source: string) {
+  onStateUpdate(state: any, source: any) {
     console.log("Agent state updated:", { state, source });
   }
 }

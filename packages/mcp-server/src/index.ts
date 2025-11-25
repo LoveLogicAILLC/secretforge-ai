@@ -364,7 +364,7 @@ async function createSecret(data: z.infer<typeof CreateSecretSchema>) {
     body: JSON.stringify(data),
   });
 
-  return response.json();
+  return response.json() as any;
 }
 
 async function rotateSecret(secretId: string) {
