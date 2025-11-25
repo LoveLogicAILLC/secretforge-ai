@@ -17,6 +17,11 @@ database_id = "YOUR_D1_DATABASE_ID"
 binding = "SECRETS_VAULT"
 id = "YOUR_KV_NAMESPACE_ID"
 
+# KV for rate limiting
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "YOUR_RATE_LIMIT_KV_ID"
+
 # Vectorize for API documentation search
 [[vectorize]]
 binding = "VECTOR_DB"
@@ -38,7 +43,9 @@ ENVIRONMENT = "development"
 # Secrets (set via wrangler secret put)
 # OPENAI_API_KEY
 # ANTHROPIC_API_KEY
-# ENCRYPTION_KEY
+# ENCRYPTION_KEY (32 bytes base64)
+# JWT_SECRET (32+ bytes base64)
+# API_KEY_SALT (32 bytes base64)
 
 [env.production]
 name = "secretforge-api-production"

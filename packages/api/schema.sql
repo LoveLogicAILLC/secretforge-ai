@@ -1,6 +1,70 @@
 -- SecretForge AI Database Schema
 -- D1 (SQLite) schema for metadata and audit logs
 
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    tier TEXT NOT NULL CHECK(tier IN ('free', 'pro', 'team', 'enterprise')) DEFAULT 'free',
+    organization_id TEXT,
+    stripe_customer_id TEXT,
+    stripe_subscription_id TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_login_at TEXT,
+    is_active BOOLEAN DEFAULT 1
+);
+
+CREATE INDEX IF NOT EXISTS idx_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_organization ON users(organization_id);
+CREATE INDEX IF NOT EXISTS idx_tier ON users(tier);
+
+-- Organizations table
+CREATE TABLE IF NOT EXISTS organizations (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    tier TEXT NOT NULL CHECK(tier IN ('team', 'enterprise')) DEFAULT 'team',
+    stripe_customer_id TEXT,
+    stripe_subscription_id TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    is_active BOOLEAN DEFAULT 1
+);
+
+-- Organization members
+CREATE TABLE IF NOT EXISTS organization_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    organization_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    role TEXT NOT NULL CHECK(role IN ('owner', 'admin', 'member', 'viewer')) DEFAULT 'member',
+    invited_at TEXT NOT NULL DEFAULT (datetime('now')),
+    joined_at TEXT,
+    FOREIGN KEY (organization_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(organization_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_org_member ON organization_members(organization_id, user_id);
+
+-- API Keys table
+CREATE TABLE IF NOT EXISTS api_keys (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    key_hash TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    scopes TEXT, -- JSON array
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    expires_at TEXT,
+    last_used_at TEXT,
+    revoked BOOLEAN DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_key_hash ON api_keys(key_hash);
+CREATE INDEX IF NOT EXISTS idx_user_apikey ON api_keys(user_id);
+
+-- Secrets metadata table
 -- Secrets metadata table (Phase 1)
 CREATE TABLE IF NOT EXISTS secrets (
     id TEXT PRIMARY KEY,
@@ -94,7 +158,64 @@ INSERT OR IGNORE INTO service_configs (service, provider_name, api_base_url, aut
     ('sendgrid', 'SendGrid', 'https://api.sendgrid.com', 'bearer', '["mail.send"]', 'https://docs.sendgrid.com'),
     ('twilio', 'Twilio', 'https://api.twilio.com', 'api_key', '["messaging"]', 'https://www.twilio.com/docs');
 
+-- Usage tracking for billing
+CREATE TABLE IF NOT EXISTS usage_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    event_type TEXT NOT NULL CHECK(event_type IN ('secret_created', 'secret_rotated', 'api_call', 'ai_request')),
+    metadata TEXT, -- JSON
+    timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_usage_user_date ON usage_events(user_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_usage_type ON usage_events(event_type);
+
+-- Webhooks configuration
+CREATE TABLE IF NOT EXISTS webhooks (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    url TEXT NOT NULL,
+    events TEXT NOT NULL, -- JSON array
+    secret TEXT, -- For signature verification
+    is_active BOOLEAN DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_triggered_at TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_webhook_user ON webhooks(user_id);
+
+-- Webhook delivery attempts
+CREATE TABLE IF NOT EXISTS webhook_deliveries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    webhook_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    payload TEXT NOT NULL, -- JSON
+    response_status INTEGER,
+    response_body TEXT,
+    delivered_at TEXT NOT NULL DEFAULT (datetime('now')),
+    success BOOLEAN NOT NULL,
+    FOREIGN KEY (webhook_id) REFERENCES webhooks(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_delivery_webhook ON webhook_deliveries(webhook_id);
+
 -- Create triggers for updated_at
+CREATE TRIGGER IF NOT EXISTS update_user_timestamp
+AFTER UPDATE ON users
+FOR EACH ROW
+BEGIN
+    UPDATE users SET updated_at = datetime('now') WHERE id = NEW.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS update_organization_timestamp
+AFTER UPDATE ON organizations
+FOR EACH ROW
+BEGIN
+    UPDATE organizations SET updated_at = datetime('now') WHERE id = NEW.id;
+END;
+
 CREATE TRIGGER IF NOT EXISTS update_user_preferences_timestamp
 AFTER UPDATE ON user_preferences
 FOR EACH ROW
