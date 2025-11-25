@@ -19,6 +19,7 @@ import {
   searchDocsSchema,
 } from "./schemas/validation";
 import authRouter from "./routes/auth";
+import billingRouter from "./routes/billing";
 
 interface Env {
   SECRETS_VAULT: KVNamespace;
@@ -32,6 +33,8 @@ interface Env {
   ENCRYPTION_KEY: string;
   JWT_SECRET: string;
   API_KEY_SALT: string;
+  STRIPE_API_KEY: string;
+  STRIPE_WEBHOOK_SECRET: string;
 }
 
 interface Secret {
@@ -69,6 +72,9 @@ app.get("/health", (c) => {
 
 // Mount auth routes
 app.route("/auth", authRouter);
+
+// Mount billing routes
+app.route("/billing", billingRouter);
 
 // ============================================================================
 // Protected Routes (Authentication required)
