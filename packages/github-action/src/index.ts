@@ -168,7 +168,7 @@ async function provisionSecrets(
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json() as any;
       results.push({
         service: secret.service,
         environment: 'production',

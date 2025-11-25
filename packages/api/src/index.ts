@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { Agent } from "agents";
 import { OpenAI } from "openai";
 import postgres from "postgres";
+import { authMiddleware, optionalAuthMiddleware, generateApiKey } from "./middleware/auth";
 
 interface Env {
   SECRETS_VAULT: KVNamespace;
@@ -29,13 +30,39 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.use("*", cors());
 
-// Health check
+// Health check (public)
 app.get("/health", (c) => {
   return c.json({ status: "healthy", timestamp: new Date().toISOString() });
 });
 
-// Analyze project endpoint
-app.post("/api/analyze", async (c) => {
+// Create API key (public for now - should be protected by signup/login later)
+app.post("/api/auth/keys", async (c) => {
+  const { userId, name } = await c.req.json<{ userId: string; name?: string }>();
+
+  if (!userId) {
+    return c.json({ error: "userId is required" }, 400);
+  }
+
+  const apiKey = generateApiKey();
+  const keyId = crypto.randomUUID();
+
+  await c.env.DATABASE.prepare(
+    `INSERT INTO api_keys (id, user_id, api_key, name) VALUES (?, ?, ?, ?)`
+  )
+    .bind(keyId, userId, apiKey, name || "Default API Key")
+    .run();
+
+  return c.json({
+    id: keyId,
+    apiKey,
+    userId,
+    name: name || "Default API Key",
+    created: new Date().toISOString(),
+  }, 201);
+});
+
+// Analyze project endpoint (authenticated)
+app.post("/api/analyze", authMiddleware, async (c) => {
   const { projectPath, dependencies } = await c.req.json();
 
   const detectedServices = analyzeDependencies(dependencies);
@@ -48,9 +75,10 @@ app.post("/api/analyze", async (c) => {
   });
 });
 
-// Create secret
-app.post("/api/secrets", async (c) => {
-  const { service, environment, scopes, userId } = await c.req.json();
+// Create secret (authenticated)
+app.post("/api/secrets", authMiddleware, async (c) => {
+  const user = c.get('user');
+  const { service, environment, scopes } = await c.req.json();
 
   const secretId = crypto.randomUUID();
   const encryptedValue = await encryptSecret(
@@ -64,14 +92,14 @@ app.post("/api/secrets", async (c) => {
     environment,
     scopes: scopes || [],
     created: new Date().toISOString(),
-    userId,
+    userId: user.userId,
   };
 
   await c.env.SECRETS_VAULT.put(
     `secret:${secretId}`,
     JSON.stringify({ ...secret, value: encryptedValue }),
     {
-      metadata: { service, environment, userId },
+      metadata: { service, environment, userId: user.userId },
     }
   );
 
@@ -79,14 +107,15 @@ app.post("/api/secrets", async (c) => {
   await c.env.DATABASE.prepare(
     `INSERT INTO secrets (id, service, environment, user_id, created_at) VALUES (?, ?, ?, ?, ?)`
   )
-    .bind(secretId, service, environment, userId, secret.created)
+    .bind(secretId, service, environment, user.userId, secret.created)
     .run();
 
   return c.json({ secret: { ...secret, value: "[ENCRYPTED]" } }, 201);
 });
 
-// Get secret
-app.get("/api/secrets/:id", async (c) => {
+// Get secret (authenticated)
+app.get("/api/secrets/:id", authMiddleware, async (c) => {
+  const user = c.get('user');
   const secretId = c.req.param("id");
   const secretData = await c.env.SECRETS_VAULT.get(`secret:${secretId}`);
 
@@ -95,6 +124,12 @@ app.get("/api/secrets/:id", async (c) => {
   }
 
   const secret = JSON.parse(secretData);
+
+  // Authorization check
+  if (secret.userId !== user.userId) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
   const decryptedValue = await decryptSecret(c.env.ENCRYPTION_KEY, secret.value);
 
   return c.json({
@@ -103,8 +138,9 @@ app.get("/api/secrets/:id", async (c) => {
   });
 });
 
-// Rotate secret
-app.post("/api/secrets/:id/rotate", async (c) => {
+// Rotate secret (authenticated)
+app.post("/api/secrets/:id/rotate", authMiddleware, async (c) => {
+  const user = c.get('user');
   const secretId = c.req.param("id");
   const secretData = await c.env.SECRETS_VAULT.get(`secret:${secretId}`);
 
@@ -113,6 +149,12 @@ app.post("/api/secrets/:id/rotate", async (c) => {
   }
 
   const secret = JSON.parse(secretData);
+
+  // Authorization check
+  if (secret.userId !== user.userId) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
   const newValue = await generateApiKey(secret.service);
   const encryptedValue = await encryptSecret(c.env.ENCRYPTION_KEY, newValue);
 
@@ -124,8 +166,8 @@ app.post("/api/secrets/:id/rotate", async (c) => {
   return c.json({ message: "Secret rotated successfully", id: secretId });
 });
 
-// Search documentation
-app.get("/api/docs/search", async (c) => {
+// Search documentation (authenticated - optional)
+app.get("/api/docs/search", optionalAuthMiddleware, async (c) => {
   const service = c.req.query("service");
   const query = c.req.query("q");
 
@@ -145,21 +187,34 @@ app.get("/api/docs/search", async (c) => {
   return c.json({ results: results.matches });
 });
 
-// Validate security compliance
-app.get("/api/secrets/:id/validate", async (c) => {
+// Validate security compliance (authenticated)
+app.get("/api/secrets/:id/validate", authMiddleware, async (c) => {
+  const user = c.get('user');
   const secretId = c.req.param("id");
   const framework = c.req.query("framework");
+
+  // Verify secret belongs to user
+  const secretData = await c.env.SECRETS_VAULT.get(`secret:${secretId}`);
+  if (!secretData) {
+    return c.json({ error: "Secret not found" }, 404);
+  }
+
+  const secret = JSON.parse(secretData);
+  if (secret.userId !== user.userId) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
 
   const validation = await validateCompliance(c.env, secretId, framework || "SOC2");
 
   return c.json(validation);
 });
 
-// AI Agent endpoint
-app.post("/api/agent/chat", async (c) => {
-  const { message, userId } = await c.req.json();
+// AI Agent endpoint (authenticated)
+app.post("/api/agent/chat", authMiddleware, async (c) => {
+  const user = c.get('user');
+  const { message } = await c.req.json();
 
-  const agent = c.env.SECRET_AGENT.get(c.env.SECRET_AGENT.idFromName(userId));
+  const agent = c.env.SECRET_AGENT.get(c.env.SECRET_AGENT.idFromName(user.userId));
   const response = await agent.fetch(
     new Request("http://agent/chat", {
       method: "POST",

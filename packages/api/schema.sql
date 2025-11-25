@@ -1,6 +1,21 @@
 -- SecretForge AI Database Schema
 -- D1 (SQLite) schema for metadata and audit logs
 
+-- API Keys for authentication
+CREATE TABLE IF NOT EXISTS api_keys (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    api_key TEXT NOT NULL UNIQUE,
+    name TEXT, -- Optional name for the key
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_used_at TEXT,
+    expires_at TEXT,
+    is_active BOOLEAN DEFAULT 1
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_key ON api_keys(api_key);
+CREATE INDEX IF NOT EXISTS idx_user_api_keys ON api_keys(user_id, is_active);
+
 -- Secrets metadata table
 CREATE TABLE IF NOT EXISTS secrets (
     id TEXT PRIMARY KEY,
