@@ -19,7 +19,13 @@ export function generateApiKey(
 ): string {
   const randomBytes = new Uint8Array(length);
   crypto.getRandomValues(randomBytes);
-  const randomString = btoa(String.fromCharCode(...randomBytes))
+  
+  // Convert to base64 safely without spread operator (avoid stack overflow)
+  let binary = '';
+  for (let i = 0; i < randomBytes.length; i++) {
+    binary += String.fromCharCode(randomBytes[i]);
+  }
+  const randomString = btoa(binary)
     .replace(/[+/=]/g, '')
     .slice(0, length);
 
@@ -44,12 +50,17 @@ export function generateId(): string {
  * @param key - Encryption key (will be padded/truncated to 32 bytes)
  * @param value - Plaintext value to encrypt
  * @returns Base64-encoded encrypted data with IV and auth tag
+ * 
+ * Note: This function pads the key with zeros to ensure 32-byte length.
+ * In production, use a properly derived 32-byte key from a KDF like PBKDF2.
  */
 export async function encryptSecret(key: string, value: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(value);
 
   // Ensure key is exactly 32 bytes for AES-256
+  // NOTE: This simple padding is for compatibility with existing data.
+  // For new implementations, consider using a KDF (PBKDF2, HKDF) for key derivation.
   const keyData = encoder.encode(key.padEnd(32, '0').slice(0, 32));
   
   const cryptoKey = await crypto.subtle.importKey(
@@ -82,12 +93,16 @@ export async function encryptSecret(key: string, value: string): Promise<string>
  * @param key - Encryption key (will be padded/truncated to 32 bytes)
  * @param encryptedValue - Base64-encoded encrypted data with IV and auth tag
  * @returns Decrypted plaintext value
+ * 
+ * Note: This function pads the key with zeros to ensure 32-byte length.
+ * Must match the key derivation method used in encryptSecret().
  */
 export async function decryptSecret(key: string, encryptedValue: string): Promise<string> {
   const encoder = new TextEncoder();
   const { iv, data } = JSON.parse(atob(encryptedValue));
 
   // Ensure key is exactly 32 bytes for AES-256
+  // NOTE: This simple padding must match encryptSecret() for compatibility.
   const keyData = encoder.encode(key.padEnd(32, '0').slice(0, 32));
 
   const cryptoKey = await crypto.subtle.importKey(
