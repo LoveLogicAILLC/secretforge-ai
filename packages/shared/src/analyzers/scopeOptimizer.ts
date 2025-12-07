@@ -134,7 +134,8 @@ function extractJavaScriptAPICalls(code: string, service: string): APICall[] {
     const line = lines[i];
     
     // Skip empty lines and comments early
-    if (!line || line.trim().startsWith('//') || line.trim().startsWith('*')) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith('//') || trimmedLine.startsWith('*')) {
       continue;
     }
 
@@ -203,7 +204,8 @@ function extractPythonAPICalls(code: string, service: string): APICall[] {
     const line = lines[i];
     
     // Skip empty lines and comments early
-    if (!line || line.trim().startsWith('#')) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith('#')) {
       continue;
     }
 
@@ -270,7 +272,8 @@ function extractGoAPICalls(code: string, service: string): APICall[] {
     const line = lines[i];
     
     // Skip empty lines and comments early
-    if (!line || line.trim().startsWith('//')) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith('//')) {
       continue;
     }
 

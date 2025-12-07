@@ -72,6 +72,16 @@ const SERVICE_PATTERNS: ServicePattern[] = [
 ];
 
 /**
+ * Pre-computed lowercase patterns for faster matching
+ * Computed once at module load time
+ */
+const SERVICE_PATTERNS_LOWER = SERVICE_PATTERNS.map(pattern => ({
+  name: pattern.name,
+  patterns: pattern.patterns.map(p => p.toLowerCase()),
+  confidence: pattern.confidence,
+}));
+
+/**
  * Scan Node.js package.json dependencies
  */
 export function scanNodeDependencies(packageJson: any): DependencyScanResult {
@@ -256,7 +266,7 @@ export function scanRustDependencies(cargoTomlContent: string): DependencyScanRe
 
 /**
  * Core service detection logic
- * Optimized: Single pass through dependencies instead of nested loops
+ * Optimized: Single pass through dependencies, pre-computed lowercase patterns
  */
 function detectServices(dependencies: Record<string, string>): {
   services: string[];
@@ -269,10 +279,10 @@ function detectServices(dependencies: Record<string, string>): {
 
   // Single pass: check each dependency against all patterns
   for (const depNameLower of depNamesLower) {
-    for (const pattern of SERVICE_PATTERNS) {
-      // Check if any pattern matches this dependency
+    for (const pattern of SERVICE_PATTERNS_LOWER) {
+      // Check if any pattern matches this dependency (patterns already lowercase)
       const hasMatch = pattern.patterns.some(packagePattern =>
-        depNameLower.includes(packagePattern.toLowerCase())
+        depNameLower.includes(packagePattern)
       );
 
       if (hasMatch) {
