@@ -112,15 +112,32 @@ export function analyzeGoCode(code: string, service: string): ScopeAnalysisResul
 /**
  * Extract API calls from JavaScript/TypeScript code
  * Uses regex-based AST-like parsing
+ * Optimized: Early exits, pattern caching
  */
 function extractJavaScriptAPICalls(code: string, service: string): APICall[] {
+  // Early exit for empty code
+  if (!code || code.trim().length === 0) {
+    return [];
+  }
+
   const calls: APICall[] = [];
   const lines = code.split("\n");
 
   const servicePatterns = getServicePatterns(service);
+  
+  // Early exit if no patterns for service
+  if (servicePatterns.length === 0) {
+    return [];
+  }
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    
+    // Skip empty lines and comments early
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith('//') || trimmedLine.startsWith('*')) {
+      continue;
+    }
 
     for (const pattern of servicePatterns) {
       const matches = line.matchAll(pattern.regex);
@@ -150,8 +167,14 @@ function extractJavaScriptAPICalls(code: string, service: string): APICall[] {
 
 /**
  * Extract API calls from Python code
+ * Optimized: Early exit for empty code, skip empty lines and comments
  */
 function extractPythonAPICalls(code: string, service: string): APICall[] {
+  // Early exit for empty code
+  if (!code || code.trim().length === 0) {
+    return [];
+  }
+
   const calls: APICall[] = [];
   const lines = code.split("\n");
 
@@ -172,8 +195,19 @@ function extractPythonAPICalls(code: string, service: string): APICall[] {
     );
   }
 
+  // Early exit if no patterns for service
+  if (patterns.length === 0) {
+    return [];
+  }
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    
+    // Skip empty lines and comments early
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith('#')) {
+      continue;
+    }
 
     for (const pattern of patterns) {
       const matches = line.matchAll(pattern.regex);
@@ -203,8 +237,14 @@ function extractPythonAPICalls(code: string, service: string): APICall[] {
 
 /**
  * Extract API calls from Go code
+ * Optimized: Early exit for empty code, skip empty lines and comments
  */
 function extractGoAPICalls(code: string, service: string): APICall[] {
+  // Early exit for empty code
+  if (!code || code.trim().length === 0) {
+    return [];
+  }
+
   const calls: APICall[] = [];
   const lines = code.split("\n");
 
@@ -223,8 +263,19 @@ function extractGoAPICalls(code: string, service: string): APICall[] {
     );
   }
 
+  // Early exit if no patterns for service
+  if (patterns.length === 0) {
+    return [];
+  }
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    
+    // Skip empty lines and comments early
+    const trimmedLine = line.trim();
+    if (!trimmedLine || trimmedLine.startsWith('//')) {
+      continue;
+    }
 
     for (const pattern of patterns) {
       const matches = line.matchAll(pattern.regex);
@@ -253,9 +304,20 @@ function extractGoAPICalls(code: string, service: string): APICall[] {
 }
 
 /**
+ * Pattern cache for better performance
+ */
+const SERVICE_PATTERNS_CACHE: Map<string, Array<{ name: string; regex: RegExp }>> = new Map();
+
+/**
  * Get service-specific regex patterns for JavaScript
+ * Optimized: Memoized to avoid rebuilding patterns on every call
  */
 function getServicePatterns(service: string): Array<{ name: string; regex: RegExp }> {
+  // Return cached patterns if available
+  if (SERVICE_PATTERNS_CACHE.has(service)) {
+    return SERVICE_PATTERNS_CACHE.get(service)!;
+  }
+
   const patterns: Array<{ name: string; regex: RegExp }> = [];
 
   switch (service) {
@@ -305,6 +367,8 @@ function getServicePatterns(service: string): Array<{ name: string; regex: RegEx
       break;
   }
 
+  // Cache the patterns
+  SERVICE_PATTERNS_CACHE.set(service, patterns);
   return patterns;
 }
 
