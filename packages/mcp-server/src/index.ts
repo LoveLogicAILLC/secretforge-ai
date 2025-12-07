@@ -356,7 +356,7 @@ async function getGitRemote(projectPath: string): Promise<string | undefined> {
   }
 }
 
-async function createSecret(data: z.infer<typeof CreateSecretSchema>) {
+async function createSecret(data: z.infer<typeof CreateSecretSchema>): Promise<{ id: string }> {
   // Integrate with Cloudflare Workers API
   const response = await fetch("http://localhost:8787/api/secrets", {
     method: "POST",
@@ -364,7 +364,7 @@ async function createSecret(data: z.infer<typeof CreateSecretSchema>) {
     body: JSON.stringify(data),
   });
 
-  return response.json();
+  return response.json() as Promise<{ id: string }>;
 }
 
 async function rotateSecret(secretId: string) {

@@ -2,7 +2,7 @@
  * Shared utility functions
  */
 
-import { SERVICE_DETECTION_MAP, API_KEY_PREFIX_MAP } from './constants';
+import { SERVICE_DETECTION_MAP } from './constants';
 import type { Environment } from './types';
 
 /**
@@ -18,20 +18,6 @@ export function detectServicesFromDependencies(dependencies: Record<string, stri
   }
 
   return [...new Set(detected)]; // Remove duplicates
-}
-
-/**
- * Generate a secure random API key for a service
- */
-export function generateApiKey(service: string, length: number = 32): string {
-  const prefix = API_KEY_PREFIX_MAP[service] || 'sk_';
-  const randomBytes = new Uint8Array(length);
-  crypto.getRandomValues(randomBytes);
-  const randomString = btoa(String.fromCharCode(...randomBytes))
-    .replace(/[+/=]/g, '')
-    .slice(0, length);
-
-  return `${prefix}${service}_${randomString}`;
 }
 
 /**
@@ -97,13 +83,6 @@ export function sanitizeInput(input: string): string {
     .trim()
     .replace(/[<>]/g, '')
     .slice(0, 1000); // Max length
-}
-
-/**
- * Generate unique ID
- */
-export function generateId(): string {
-  return crypto.randomUUID();
 }
 
 /**
