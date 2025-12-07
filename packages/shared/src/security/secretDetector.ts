@@ -213,29 +213,44 @@ const SECRET_PATTERNS: SecretPattern[] = [
  */
 export class SecretDetector {
   private patterns: SecretPattern[];
+  private entropyCache: Map<string, number>; // Cache entropy calculations
 
   constructor(customPatterns?: SecretPattern[]) {
     this.patterns = [...SECRET_PATTERNS, ...(customPatterns || [])];
+    this.entropyCache = new Map();
   }
 
   /**
    * Scan a single file for secrets
+   * Optimized: Early exit on empty content, cached entropy calculations
    */
   scanFile(content: string, filename: string): SecretMatch[] {
+    // Early exit for empty content
+    if (!content || content.length === 0) {
+      return [];
+    }
+
     const matches: SecretMatch[] = [];
     const lines = content.split("\n");
 
     for (const pattern of this.patterns) {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
+        
+        // Skip empty lines early
+        if (!line) continue;
+        
         const lineMatches = line.matchAll(pattern.regex);
 
         for (const match of lineMatches) {
           const value = match[1] || match[0];
 
           // Skip if entropy check is required and fails
-          if (pattern.minEntropy && calculateEntropy(value) < pattern.minEntropy) {
-            continue;
+          if (pattern.minEntropy) {
+            const entropy = this.getCachedEntropy(value);
+            if (entropy < pattern.minEntropy) {
+              continue;
+            }
           }
 
           // Calculate confidence based on context
@@ -259,6 +274,24 @@ export class SecretDetector {
     }
 
     return matches;
+  }
+
+  /**
+   * Get cached entropy or calculate and cache it
+   */
+  private getCachedEntropy(value: string): number {
+    if (this.entropyCache.has(value)) {
+      return this.entropyCache.get(value)!;
+    }
+    
+    const entropy = calculateEntropy(value);
+    
+    // Limit cache size to prevent memory issues
+    if (this.entropyCache.size < 1000) {
+      this.entropyCache.set(value, entropy);
+    }
+    
+    return entropy;
   }
 
   /**

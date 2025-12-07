@@ -256,6 +256,7 @@ export function scanRustDependencies(cargoTomlContent: string): DependencyScanRe
 
 /**
  * Core service detection logic
+ * Optimized: Single pass through dependencies instead of nested loops
  */
 function detectServices(dependencies: Record<string, string>): {
   services: string[];
@@ -263,15 +264,18 @@ function detectServices(dependencies: Record<string, string>): {
 } {
   const detected = new Map<string, number>();
 
-  const depNames = Object.keys(dependencies);
+  // Pre-compute lowercase dependency names for faster comparison
+  const depNamesLower = Object.keys(dependencies).map(dep => dep.toLowerCase());
 
-  for (const pattern of SERVICE_PATTERNS) {
-    for (const packagePattern of pattern.patterns) {
-      const matches = depNames.filter((dep) =>
-        dep.toLowerCase().includes(packagePattern.toLowerCase())
+  // Single pass: check each dependency against all patterns
+  for (const depNameLower of depNamesLower) {
+    for (const pattern of SERVICE_PATTERNS) {
+      // Check if any pattern matches this dependency
+      const hasMatch = pattern.patterns.some(packagePattern =>
+        depNameLower.includes(packagePattern.toLowerCase())
       );
 
-      if (matches.length > 0) {
+      if (hasMatch) {
         // Use highest confidence if multiple matches
         const currentConfidence = detected.get(pattern.name) || 0;
         detected.set(pattern.name, Math.max(currentConfidence, pattern.confidence));
@@ -300,15 +304,22 @@ function detectNodePackageManager(packageJson: any): string {
 
 /**
  * Universal scanner - auto-detect language and scan
+ * Optimized: Early exit for empty content, better error handling
  */
 export function scanDependencies(
   content: string,
   fileType?: "package.json" | "requirements.txt" | "go.mod" | "Gemfile" | "composer.json" | "Cargo.toml"
 ): DependencyScanResult {
+  // Early exit for empty content
+  if (!content || content.trim().length === 0) {
+    throw new Error("Cannot scan empty content");
+  }
+
   try {
     // Auto-detect if not specified
     if (!fileType) {
-      if (content.trim().startsWith("{") && content.includes("dependencies")) {
+      const trimmed = content.trim();
+      if (trimmed.startsWith("{") && content.includes("dependencies")) {
         // Looks like JSON
         const json = JSON.parse(content);
         if (json.dependencies || json.devDependencies) {

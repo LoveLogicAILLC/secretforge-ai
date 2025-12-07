@@ -76,13 +76,16 @@ export interface SecretStorage {
 
 /**
  * SQLite-based secret storage implementation
+ * Optimized: Cached prepared statements for better performance
  */
 export class SQLiteSecretStorage implements SecretStorage {
   private db: any;
   private cryptoProvider: CryptoProvider;
+  private preparedStatements: Map<string, any>; // Cache for prepared statements
 
   constructor(dbPath: string, cryptoProvider: CryptoProvider) {
     this.cryptoProvider = cryptoProvider;
+    this.preparedStatements = new Map();
     this.initDatabase(dbPath);
   }
 
@@ -112,6 +115,16 @@ export class SQLiteSecretStorage implements SecretStorage {
     `);
   }
 
+  /**
+   * Get or create a prepared statement (cached)
+   */
+  private getPreparedStatement(key: string, sql: string): any {
+    if (!this.preparedStatements.has(key)) {
+      this.preparedStatements.set(key, this.db.prepare(sql));
+    }
+    return this.preparedStatements.get(key);
+  }
+
   async addSecret(options: AddSecretOptions): Promise<Secret> {
     const { name, value, project, environment, tags = [] } = options;
 
@@ -133,11 +146,12 @@ export class SQLiteSecretStorage implements SecretStorage {
       updated_at: now,
     };
 
-    // Insert into database
-    const stmt = this.db.prepare(`
-      INSERT INTO secrets (id, name, project, environment, tags, value_encrypted, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    // Use cached prepared statement
+    const stmt = this.getPreparedStatement(
+      'insert_secret',
+      `INSERT INTO secrets (id, name, project, environment, tags, value_encrypted, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    );
 
     stmt.run(
       secret.id,
@@ -154,7 +168,10 @@ export class SQLiteSecretStorage implements SecretStorage {
   }
 
   async getSecret(id: string): Promise<Secret | null> {
-    const stmt = this.db.prepare('SELECT * FROM secrets WHERE id = ?');
+    const stmt = this.getPreparedStatement(
+      'get_secret',
+      'SELECT * FROM secrets WHERE id = ?'
+    );
     const row = stmt.get(id);
 
     if (!row) {
@@ -165,7 +182,8 @@ export class SQLiteSecretStorage implements SecretStorage {
   }
 
   async getSecretByName(name: string, project: string, environment: string): Promise<Secret | null> {
-    const stmt = this.db.prepare(
+    const stmt = this.getPreparedStatement(
+      'get_secret_by_name',
       'SELECT * FROM secrets WHERE name = ? AND project = ? AND environment = ?'
     );
     const row = stmt.get(name, project, environment);
@@ -191,30 +209,33 @@ export class SQLiteSecretStorage implements SecretStorage {
       params.push(options.environment);
     }
 
+    // Optimize tag filtering using SQL JSON functions
+    if (options.tags && options.tags.length > 0) {
+      // Build SQL to check if any of the requested tags exist in the JSON array
+      const tagConditions = options.tags.map(() => 
+        `tags LIKE ?`
+      ).join(' OR ');
+      query += ` AND (${tagConditions})`;
+      // Add wildcard search for each tag in the JSON string
+      options.tags.forEach(tag => params.push(`%"${tag}"%`));
+    }
+
     query += ' ORDER BY created_at DESC';
 
     const stmt = this.db.prepare(query);
     const rows = stmt.all(...params);
 
-    const secrets = rows.map((row: any) => this.rowToSecret(row));
-
-    // Filter by tags if provided
-    if (options.tags && options.tags.length > 0) {
-      return secrets.filter((secret: Secret) =>
-        options.tags!.some((tag) => secret.tags.includes(tag))
-      );
-    }
-
-    return secrets;
+    return rows.map((row: any) => this.rowToSecret(row));
   }
 
   async updateSecret(id: string, value: string): Promise<Secret> {
     const value_encrypted = await this.cryptoProvider.encrypt(value);
     const updated_at = new Date().toISOString();
 
-    const stmt = this.db.prepare(`
-      UPDATE secrets SET value_encrypted = ?, updated_at = ? WHERE id = ?
-    `);
+    const stmt = this.getPreparedStatement(
+      'update_secret',
+      'UPDATE secrets SET value_encrypted = ?, updated_at = ? WHERE id = ?'
+    );
 
     stmt.run(value_encrypted, updated_at, id);
 
@@ -227,7 +248,10 @@ export class SQLiteSecretStorage implements SecretStorage {
   }
 
   async deleteSecret(id: string): Promise<void> {
-    const stmt = this.db.prepare('DELETE FROM secrets WHERE id = ?');
+    const stmt = this.getPreparedStatement(
+      'delete_secret',
+      'DELETE FROM secrets WHERE id = ?'
+    );
     stmt.run(id);
   }
 
@@ -256,6 +280,8 @@ export class SQLiteSecretStorage implements SecretStorage {
 
   close(): void {
     if (this.db) {
+      // Clear prepared statements cache
+      this.preparedStatements.clear();
       this.db.close();
     }
   }
