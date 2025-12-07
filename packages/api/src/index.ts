@@ -229,9 +229,9 @@ app.get("/api/secrets", auth, tierRateLimit(), async (c) => {
   const result = await c.env.DATABASE.prepare(query).bind(...bindings).all();
 
   return c.json({
-    secrets: result.results.map((s) => ({
-      ...s,
-      scopes: JSON.parse((s.scopes as string) || "[]"),
+    secrets: result.results.map((secret) => ({
+      ...secret,
+      scopes: JSON.parse((secret.scopes as string) || "[]"),
     })),
   });
 });
@@ -442,15 +442,15 @@ function analyzeDependencies(dependencies: Record<string, string>): string[] {
     redis: ["redis", "ioredis"],
   };
 
-  const detected: string[] = [];
+  const detectedServices: string[] = [];
   for (const [service, packages] of Object.entries(serviceMap)) {
     if (
-      packages.some((pkg) => Object.keys(dependencies).some((d) => d.includes(pkg)))
+      packages.some((packageName) => Object.keys(dependencies).some((dependency) => dependency.includes(packageName)))
     ) {
-      detected.push(service);
+      detectedServices.push(service);
     }
   }
-  return detected;
+  return detectedServices;
 }
 
 async function getRecommendations(env: Env, services: string[]) {
@@ -486,8 +486,8 @@ async function findMissingKeys(
     .bind(userId)
     .all();
 
-  const existingServices = existing.results.map((r: any) => r.service);
-  return services.filter((s) => !existingServices.includes(s));
+  const existingServices = existing.results.map((result: any) => result.service);
+  return services.filter((service) => !existingServices.includes(service));
 }
 
 async function encryptSecret(key: string, value: string): Promise<string> {

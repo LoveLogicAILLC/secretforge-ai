@@ -255,8 +255,8 @@ async function hashApiKey(apiKey: string): Promise<string> {
 /**
  * Base64 URL decode helper
  */
-function base64UrlDecode(str: string): Uint8Array {
-  const base64 = str.replace(/-/g, "+").replace(/_/g, "/");
+function base64UrlDecode(base64String: string): Uint8Array {
+  const base64 = base64String.replace(/-/g, "+").replace(/_/g, "/");
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {

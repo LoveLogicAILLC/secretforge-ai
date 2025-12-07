@@ -251,12 +251,12 @@ export function notFoundHandler(c: Context) {
 /**
  * Request timeout middleware
  */
-export function timeout(ms: number = 30000) {
+export function timeout(timeoutMilliseconds: number = 30000) {
   return async (c: Context, next: any) => {
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => {
         reject(new HTTPException(408, { message: "Request timeout" }));
-      }, ms);
+      }, timeoutMilliseconds);
     });
 
     try {

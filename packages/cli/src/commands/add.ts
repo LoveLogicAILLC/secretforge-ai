@@ -87,7 +87,7 @@ export async function addCommand(name: string, options: { env?: string; tags?: s
     } else {
       // Parse tags
       const tags = answers.tags
-        ? answers.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+        ? answers.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean)
         : [];
 
       // Add new secret

@@ -35,8 +35,8 @@ program
     console.log(chalk.bold("\n📦 Detected Dependencies:"));
     Object.keys(context.dependencies)
       .slice(0, 10)
-      .forEach((dep) => {
-        console.log(chalk.gray(`  • ${dep}`));
+      .forEach((dependency) => {
+        console.log(chalk.gray(`  • ${dependency}`));
       });
 
     const detectedServices = await detectRequiredServices(context);
@@ -81,14 +81,14 @@ program
       console.log(chalk.bold("💬 SecretForge AI Assistant"));
       console.log(chalk.gray("Type your message (or 'exit' to quit)\n"));
 
-      const rl = (await import("readline")).createInterface({
+      const readlineInterface = (await import("readline")).createInterface({
         input: process.stdin,
         output: process.stdout,
       });
 
-      rl.on("line", async (input) => {
+      readlineInterface.on("line", async (input) => {
         if (input.toLowerCase() === "exit") {
-          rl.close();
+          readlineInterface.close();
           return;
         }
 
@@ -168,15 +168,15 @@ program
 
 // Helper functions
 async function analyzeCurrentProject(): Promise<CLIContext> {
-  const cwd = process.cwd();
+  const currentWorkingDirectory = process.cwd();
 
   try {
     const packageJson = JSON.parse(
-      await readFile(join(cwd, "package.json"), "utf-8")
+      await readFile(join(currentWorkingDirectory, "package.json"), "utf-8")
     );
 
     return {
-      projectPath: cwd,
+      projectPath: currentWorkingDirectory,
       dependencies: {
         ...packageJson.dependencies,
         ...packageJson.devDependencies,
@@ -186,7 +186,7 @@ async function analyzeCurrentProject(): Promise<CLIContext> {
     };
   } catch {
     return {
-      projectPath: cwd,
+      projectPath: currentWorkingDirectory,
       dependencies: {},
       apiEndpoint: "http://localhost:8787",
       userId: "default-user",
@@ -206,18 +206,18 @@ async function detectRequiredServices(
     sendgrid: ["@sendgrid/mail"],
   };
 
-  const detected: string[] = [];
+  const detectedServices: string[] = [];
   for (const [service, packages] of Object.entries(serviceMap)) {
     if (
-      packages.some((pkg) =>
-        Object.keys(context.dependencies).some((d) => d.includes(pkg))
+      packages.some((packageName) =>
+        Object.keys(context.dependencies).some((dependency) => dependency.includes(packageName))
       )
     ) {
-      detected.push(service);
+      detectedServices.push(service);
     }
   }
 
-  return detected;
+  return detectedServices;
 }
 
 async function provisionKey(service: string, context: CLIContext) {

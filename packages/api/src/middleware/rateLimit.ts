@@ -107,13 +107,13 @@ function getIdentifier(c: Context): string {
   }
 
   // Fall back to IP address
-  const ip =
+  const clientIpAddress =
     c.req.header("CF-Connecting-IP") ||
     c.req.header("X-Forwarded-For") ||
     c.req.header("X-Real-IP") ||
     "unknown";
 
-  return `ip:${ip}`;
+  return `ip:${clientIpAddress}`;
 }
 
 /**
@@ -145,10 +145,10 @@ export function tierRateLimit() {
 /**
  * IP-based rate limiting for unauthenticated endpoints
  */
-export function ipRateLimit(windowMs = 60000, max = 20) {
+export function ipRateLimit(windowMilliseconds = 60000, maxRequests = 20) {
   return rateLimit({
-    windowMs,
-    max,
+    windowMs: windowMilliseconds,
+    max: maxRequests,
     keyPrefix: "ip-rl",
   });
 }
@@ -156,20 +156,20 @@ export function ipRateLimit(windowMs = 60000, max = 20) {
 /**
  * Endpoint-specific rate limiting
  */
-export function endpointRateLimit(endpoint: string, windowMs = 60000, max = 30) {
+export function endpointRateLimit(endpoint: string, windowMilliseconds = 60000, maxRequests = 30) {
   return async (c: Context<{ Bindings: RateLimitEnv }>, next: Next) => {
     const identifier = getIdentifier(c);
     const key = `endpoint-rl:${endpoint}:${identifier}`;
     const now = Date.now();
-    const windowStart = now - windowMs;
+    const windowStart = now - windowMilliseconds;
 
     const data = await c.env.RATE_LIMIT_KV?.get(key, "json");
     const requests: number[] = (data as number[]) || [];
     const recentRequests = requests.filter((timestamp) => timestamp > windowStart);
 
-    if (recentRequests.length >= max) {
+    if (recentRequests.length >= maxRequests) {
       const oldestRequest = Math.min(...recentRequests);
-      const resetTime = oldestRequest + windowMs;
+      const resetTime = oldestRequest + windowMilliseconds;
       const retryAfter = Math.ceil((resetTime - now) / 1000);
 
       throw new HTTPException(429, {
@@ -179,7 +179,7 @@ export function endpointRateLimit(endpoint: string, windowMs = 60000, max = 30) 
 
     recentRequests.push(now);
     await c.env.RATE_LIMIT_KV?.put(key, JSON.stringify(recentRequests), {
-      expirationTtl: Math.ceil(windowMs / 1000),
+      expirationTtl: Math.ceil(windowMilliseconds / 1000),
     });
 
     await next();

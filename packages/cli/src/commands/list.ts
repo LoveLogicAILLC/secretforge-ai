@@ -34,7 +34,7 @@ export async function listCommand(options: { env?: string; project?: string; tag
     }
 
     if (options.tags) {
-      listOptions.tags = options.tags.split(',').map((t) => t.trim()).filter(Boolean);
+      listOptions.tags = options.tags.split(',').map((tag) => tag.trim()).filter(Boolean);
     }
 
     // List secrets
@@ -49,17 +49,17 @@ export async function listCommand(options: { env?: string; project?: string; tag
       console.log(chalk.bold('\n🔑 Secrets:\n'));
 
       // Group by environment
-      const byEnv = secrets.reduce((acc, secret) => {
-        if (!acc[secret.environment]) {
-          acc[secret.environment] = [];
+      const groupedSecrets = secrets.reduce((groupedSecrets, secret) => {
+        if (!groupedSecrets[secret.environment]) {
+          groupedSecrets[secret.environment] = [];
         }
-        acc[secret.environment].push(secret);
-        return acc;
+        groupedSecrets[secret.environment].push(secret);
+        return groupedSecrets;
       }, {} as Record<string, typeof secrets>);
 
-      for (const [env, envSecrets] of Object.entries(byEnv)) {
-        console.log(chalk.bold.cyan(`  ${env.toUpperCase()}:`));
-        envSecrets.forEach((secret) => {
+      for (const [environment, secretsInEnvironment] of Object.entries(groupedSecrets)) {
+        console.log(chalk.bold.cyan(`  ${environment.toUpperCase()}:`));
+        secretsInEnvironment.forEach((secret) => {
           console.log(chalk.gray(`    • ${secret.name}`));
           console.log(chalk.gray(`      ID: ${secret.id}`));
           if (secret.tags.length > 0) {
