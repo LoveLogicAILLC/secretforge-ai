@@ -41,7 +41,7 @@ export function generateId(): string {
  * Encrypt a plaintext value using AES-256-GCM (Web Crypto API)
  * Compatible with Cloudflare Workers and modern browsers
  * 
- * @param key - Base64-encoded encryption key (must be 32 bytes when decoded)
+ * @param key - Encryption key (will be padded/truncated to 32 bytes)
  * @param value - Plaintext value to encrypt
  * @returns Base64-encoded encrypted data with IV and auth tag
  */
@@ -49,9 +49,12 @@ export async function encryptSecret(key: string, value: string): Promise<string>
   const encoder = new TextEncoder();
   const data = encoder.encode(value);
 
+  // Ensure key is exactly 32 bytes for AES-256
+  const keyData = encoder.encode(key.padEnd(32, '0').slice(0, 32));
+  
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
-    encoder.encode(key),
+    keyData,
     { name: 'AES-GCM' },
     false,
     ['encrypt']
@@ -76,7 +79,7 @@ export async function encryptSecret(key: string, value: string): Promise<string>
  * Decrypt an encrypted value using AES-256-GCM (Web Crypto API)
  * Compatible with Cloudflare Workers and modern browsers
  * 
- * @param key - Base64-encoded encryption key (must be 32 bytes when decoded)
+ * @param key - Encryption key (will be padded/truncated to 32 bytes)
  * @param encryptedValue - Base64-encoded encrypted data with IV and auth tag
  * @returns Decrypted plaintext value
  */
@@ -84,9 +87,12 @@ export async function decryptSecret(key: string, encryptedValue: string): Promis
   const encoder = new TextEncoder();
   const { iv, data } = JSON.parse(atob(encryptedValue));
 
+  // Ensure key is exactly 32 bytes for AES-256
+  const keyData = encoder.encode(key.padEnd(32, '0').slice(0, 32));
+
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
-    encoder.encode(key),
+    keyData,
     { name: 'AES-GCM' },
     false,
     ['decrypt']
