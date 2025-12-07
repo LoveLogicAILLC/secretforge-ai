@@ -157,7 +157,7 @@ export class LLMProvider {
       throw new Error(`OpenAI API error: ${error}`);
     }
 
-    const data = await response.json<any>();
+    const data = (await response.json()) as any;
 
     return {
       content: data.choices[0].message.content,
@@ -196,7 +196,7 @@ export class LLMProvider {
       throw new Error(`Ollama API error: ${error}`);
     }
 
-    const data = await response.json<any>();
+    const data = (await response.json()) as any;
 
     return {
       content: data.message.content,

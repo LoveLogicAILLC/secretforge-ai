@@ -8,6 +8,7 @@ import {
   createApiKeySchema,
   revokeApiKeySchema,
 } from "../schemas/validation";
+import { generateId } from "@secretforge/shared";
 
 interface AuthEnv {
   DATABASE: D1Database;
@@ -39,7 +40,7 @@ authRouter.post("/signup", validateRequest(createUserSchema), async (c) => {
   const passwordHash = await hashPassword(password);
 
   // Create user
-  const userId = crypto.randomUUID();
+  const userId = generateId();
   await c.env.DATABASE.prepare(
     `INSERT INTO users (id, email, password_hash, tier, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?)`
@@ -176,7 +177,7 @@ authRouter.post("/api-keys", validateRequest(createApiKeySchema), async (c) => {
   const { name, scopes, expiresIn } = c.get("validatedData");
 
   // Generate API key
-  const apiKey = await generateApiKey();
+  const apiKey = generateApiKey();
   const keyHash = await hashApiKey(apiKey);
 
   // Calculate expiration
@@ -185,7 +186,7 @@ authRouter.post("/api-keys", validateRequest(createApiKeySchema), async (c) => {
     : null;
 
   // Store API key
-  const keyId = crypto.randomUUID();
+  const keyId = generateId();
   await c.env.DATABASE.prepare(
     `INSERT INTO api_keys (id, user_id, key_hash, name, scopes, created_at, expires_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)`

@@ -1,5 +1,6 @@
 import { Context, Next } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { generateApiKey as generateApiKeyShared } from "@secretforge/shared";
 
 export interface AuthUser {
   userId: string;
@@ -327,11 +328,6 @@ function base64UrlEncode(data: string | ArrayBuffer): string {
 /**
  * Generate API key
  */
-export async function generateApiKey(): Promise<string> {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  const randomPart = btoa(String.fromCharCode(...array))
-    .replace(/[+/=]/g, "")
-    .substring(0, 32);
-  return `sf_${randomPart}`;
+export function generateApiKey(): string {
+  return generateApiKeyShared('sf_');
 }
