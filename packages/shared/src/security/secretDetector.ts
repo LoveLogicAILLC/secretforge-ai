@@ -209,15 +209,25 @@ const SECRET_PATTERNS: SecretPattern[] = [
 ];
 
 /**
+ * Configuration for SecretDetector
+ */
+export interface SecretDetectorConfig {
+  customPatterns?: SecretPattern[];
+  entropyCacheSize?: number; // Max number of entropy calculations to cache
+}
+
+/**
  * Main secret detector class
  */
 export class SecretDetector {
   private patterns: SecretPattern[];
   private entropyCache: Map<string, number>; // Cache entropy calculations
+  private readonly maxCacheSize: number;
 
-  constructor(customPatterns?: SecretPattern[]) {
-    this.patterns = [...SECRET_PATTERNS, ...(customPatterns || [])];
+  constructor(config?: SecretDetectorConfig) {
+    this.patterns = [...SECRET_PATTERNS, ...(config?.customPatterns || [])];
     this.entropyCache = new Map();
+    this.maxCacheSize = config?.entropyCacheSize ?? 1000; // Default 1000 entries
   }
 
   /**
@@ -287,7 +297,7 @@ export class SecretDetector {
     const entropy = calculateEntropy(value);
     
     // Limit cache size to prevent memory issues
-    if (this.entropyCache.size < 1000) {
+    if (this.entropyCache.size < this.maxCacheSize) {
       this.entropyCache.set(value, entropy);
     }
     

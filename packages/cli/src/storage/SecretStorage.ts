@@ -210,14 +210,20 @@ export class SQLiteSecretStorage implements SecretStorage {
     }
 
     // Optimize tag filtering using SQL JSON functions
+    // Note: SQLite JSON support varies. Using more precise LIKE pattern to avoid partial matches
     if (options.tags && options.tags.length > 0) {
       // Build SQL to check if any of the requested tags exist in the JSON array
+      // Using pattern: ["tag"] or ,"tag", or ,"tag"] to ensure exact match
       const tagConditions = options.tags.map(() => 
-        `tags LIKE ?`
+        `(tags LIKE ? OR tags LIKE ? OR tags LIKE ?)`
       ).join(' OR ');
       query += ` AND (${tagConditions})`;
-      // Add wildcard search for each tag in the JSON string
-      options.tags.forEach(tag => params.push(`%"${tag}"%`));
+      // Add patterns for: start of array, middle of array, end of array
+      options.tags.forEach(tag => {
+        params.push(`["${tag}"%`);  // Start of array: ["tag"
+        params.push(`%,"${tag}",%`); // Middle: ,"tag",
+        params.push(`%,"${tag}"]`);  // End: ,"tag"]
+      });
     }
 
     query += ' ORDER BY created_at DESC';
