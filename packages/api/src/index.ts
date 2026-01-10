@@ -20,6 +20,7 @@ import {
 } from "./schemas/validation";
 import authRouter from "./routes/auth";
 import billingRouter from "./routes/billing";
+import { encryptSecret, decryptSecret, generateApiKey, generateId } from "@secretforge/shared";
 
 interface Env {
   SECRETS_VAULT: KVNamespace;
@@ -118,8 +119,8 @@ app.post(
     // Check tier limits
     await enforceTierLimits(c.env.DATABASE, user.userId, user.tier);
 
-    const secretId = crypto.randomUUID();
-    const secretValue = value || (await generateApiKey(service));
+    const secretId = generateId();
+    const secretValue = value || generateApiKey('sk_', service);
     const encryptedValue = await encryptSecret(c.env.ENCRYPTION_KEY, secretValue);
 
     const secret: Secret = {
@@ -259,7 +260,7 @@ app.post(
       return c.json({ error: "Forbidden" }, 403);
     }
 
-    const newValue = await generateApiKey(secret.service);
+    const newValue = generateApiKey('sk_', secret.service);
     const encryptedValue = await encryptSecret(c.env.ENCRYPTION_KEY, newValue);
 
     secret.value = encryptedValue;
@@ -488,60 +489,6 @@ async function findMissingKeys(
 
   const existingServices = existing.results.map((r: any) => r.service);
   return services.filter((s) => !existingServices.includes(s));
-}
-
-async function encryptSecret(key: string, value: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(value);
-
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(key),
-    { name: "AES-GCM" },
-    false,
-    ["encrypt"]
-  );
-
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encrypted = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv },
-    cryptoKey,
-    data
-  );
-
-  return btoa(
-    JSON.stringify({
-      iv: Array.from(iv),
-      data: Array.from(new Uint8Array(encrypted)),
-    })
-  );
-}
-
-async function decryptSecret(key: string, encryptedValue: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const { iv, data } = JSON.parse(atob(encryptedValue));
-
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(key),
-    { name: "AES-GCM" },
-    false,
-    ["decrypt"]
-  );
-
-  const decrypted = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: new Uint8Array(iv) },
-    cryptoKey,
-    new Uint8Array(data)
-  );
-
-  return new TextDecoder().decode(decrypted);
-}
-
-async function generateApiKey(service: string): Promise<string> {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return `sk_${service}_${btoa(String.fromCharCode(...array)).replace(/[+/=]/g, "")}`;
 }
 
 async function generateEmbedding(env: Env, text: string): Promise<number[]> {

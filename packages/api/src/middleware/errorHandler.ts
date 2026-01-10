@@ -1,5 +1,6 @@
 import { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { generateId } from "@secretforge/shared";
 
 export interface ErrorResponse {
   error: {
@@ -16,7 +17,7 @@ export interface ErrorResponse {
  * Catches all errors and returns standardized error responses
  */
 export async function errorHandler(err: Error, c: Context): Promise<Response> {
-  const requestId = crypto.randomUUID();
+  const requestId = generateId();
   const timestamp = new Date().toISOString();
 
   // Log error for debugging
@@ -157,7 +158,7 @@ export function validateRequest(schema: any) {
  */
 export async function requestLogger(c: Context, next: any) {
   const start = Date.now();
-  const requestId = crypto.randomUUID();
+  const requestId = generateId();
 
   c.set("requestId", requestId);
 
@@ -240,7 +241,7 @@ export function notFoundHandler(c: Context) {
     error: {
       message: "Endpoint not found",
       code: "NOT_FOUND",
-      requestId: c.get("requestId") || crypto.randomUUID(),
+      requestId: c.get("requestId") || generateId(),
       timestamp: new Date().toISOString(),
     },
   };
