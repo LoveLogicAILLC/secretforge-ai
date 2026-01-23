@@ -61,3 +61,7 @@ temp/
 *.p12
 credentials.json
 service-account.json
+.ariana/
+.traces/
+.ariana_saved_traces/
+.vault_secret_key

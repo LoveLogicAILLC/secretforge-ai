@@ -1,0 +1,1 @@
+var e={},t=(_,a,s)=>(e.__NEXT_FONT_MANIFEST=_.__NEXT_FONT_MANIFEST='{"pages":{},"app":{"/Users/RemyMorgan-Jones/secretforge-ai/packages/web/app/layout":["static/media/e4af272ccee01ff0-s.p.woff2"]},"appUsingSizeAdjust":true,"pagesUsingSizeAdjust":false}',e.__REACT_LOADABLE_MANIFEST=_.__REACT_LOADABLE_MANIFEST="{}",e);export{t as __getNamedExports};

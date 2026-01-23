@@ -6,6 +6,7 @@ import ora from "ora";
 import inquirer from "inquirer";
 import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
+import { scanCommand } from "./commands/scan.js";
 
 interface CLIContext {
   projectPath: string;
@@ -20,7 +21,10 @@ const ollama = new Ollama({ host: "http://localhost:11434" });
 program
   .name("secretforge")
   .description("AI-powered API key management CLI")
+  .description("AI-powered API key management CLI")
   .version("1.0.0");
+
+program.addCommand(scanCommand);
 
 // Initialize project
 program

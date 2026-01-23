@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SecretForge Keys Hub</title>
+    <meta name="description" content="Quick links to API key pages, local-only key saving, and .env export." />
+    <style>
+      :root {
+        --bg: #0b0f14;
+        --card: #11161d;
+        --text: #e6edf3;
+        --muted: #9aa7b0;
+        --accent: #4fb3ff;
+        --accent-2: #7b6cff;
+        --border: #1e2630;
+        --danger: #ff6b6b;
+        --success: #18c69c;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; background: linear-gradient(180deg, #0b0f14 0%, #0f141b 60%, #0b0f14 100%);
+        color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      }
+      .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+      header .title { display: flex; align-items: center; gap: 12px; }
+      header h1 { margin: 0; font-size: 22px; }
+      header .badge { font-size: 12px; color: var(--muted); }
+      .search-wrap { display: flex; gap: 12px; margin: 12px 0 18px; }
+      .search { flex: 1; background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 8px; font-size: 14px; }
+      .open-selected { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: #15202b; color: var(--text); cursor: pointer; }
+      .open-selected:disabled { opacity: .5; cursor: not-allowed; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+      .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; transition: border .12s ease, transform .12s ease; cursor: pointer; }
+      .card:hover { border-color: #2a3440; }
+      .card.selected { outline: 2px solid var(--accent); transform: translateY(-1px); }
+      .card h3 { margin: 0 0 8px; font-size: 15px; }
+      .card .env { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; color: var(--muted); }
+      .links { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; }
+      .links a { text-decoration: none; font-size: 12px; color: var(--accent); background: #15202b; border: 1px solid var(--border); padding: 6px 8px; border-radius: 8px; }
+      .env-section { margin-top: 24px; padding: 16px; border-radius: 12px; background: #0d1319; border: 1px solid var(--border); }
+      .env-section h2 { margin: 0 0 8px; font-size: 16px; }
+      .env-actions { display: flex; gap: 8px; margin: 12px 0; }
+      .env-actions input { flex: 1; background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; border-radius: 8px; font-size: 13px; }
+      .env-actions button { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: #15202b; color: var(--text); cursor: pointer; font-size: 13px; }
+      .env-preview { background: #0b0f14; border: 1px dashed #233042; border-radius: 8px; padding: 12px; white-space: pre-wrap; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: var(--muted); }
+      .muted { color: var(--muted); font-size: 12px; }
+      footer { margin-top: 24px; text-align: center; color: var(--muted); font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="title">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="url(#g)"/><defs><linearGradient id="g" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse"><stop stop-color="#4fb3ff"/><stop offset="1" stop-color="#7b6cff"/></linearGradient></defs></svg>
+          <h1>SecretForge Keys Hub</h1>
+        </div>
+        <span class="badge">Static, local-only, privacy-first</span>
+      </header>
+
+      <div class="search-wrap">
+        <input id="search" class="search" placeholder="Search providers (name or env var)…" autocomplete="off" />
+        <button id="openSelected" class="open-selected" disabled>Open selected</button>
+      </div>
+
+      <div id="grid" class="grid" aria-live="polite"></div>
+
+      <section class="env-section">
+        <h2>.env toolkit</h2>
+        <p class="muted">Keys are stored only in your browser (localStorage). They never leave your device.</p>
+        <div class="env-actions">
+          <input id="envName" placeholder="ENV_VAR_NAME" />
+          <input id="envValue" placeholder="your_secret_value" />
+          <button id="saveEnv">Save</button>
+          <button id="copyEnv">Copy .env</button>
+          <button id="downloadEnv">Download .env</button>
+          <button id="clearEnv" style="color:#ff6b6b">Clear saved</button>
+        </div>
+        <pre id="envPreview" class="env-preview">(no saved keys yet)</pre>
+      </section>
+
+      <footer>Built for fast onboarding. Need another provider added? Tell us and we’ll include it.</footer>
+    </div>
+
+    <script>
+      const STORAGE_KEY = 'sf.keys';
+      let SAVED = {};
+      try { const s = localStorage.getItem(STORAGE_KEY); SAVED = s ? JSON.parse(s) : {}; } catch {}
+
+      function persist() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(SAVED));
+        renderEnv();
+      }
+      function renderEnv() {
+        const lines = Object.keys(SAVED).sort().map(k => `${k}=${SAVED[k]}`);
+        const preview = document.getElementById('envPreview');
+        preview.textContent = lines.length ? lines.join('\n') : '(no saved keys yet)';
+        document.getElementById('copyEnv').disabled = !lines.length;
+        document.getElementById('downloadEnv').disabled = !lines.length;
+      }
+      function copyEnv() {
+        const text = document.getElementById('envPreview').textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.getElementById('copyEnv');
+          const prev = btn.textContent; btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = prev, 1200);
+        });
+      }
+      function downloadEnv() {
+        const text = document.getElementById('envPreview').textContent;
+        const blob = new Blob([text], { type: 'text/plain' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'keys.env'; a.click(); URL.revokeObjectURL(a.href);
+      }
+
+      // Providers: load from providers.json, fallback to a minimal default
+      const DEFAULT_PROVIDERS = [
+        { key: 'openai', name: 'OpenAI', env: 'OPENAI_API_KEY', links:[{label:'API Keys', url:'https://platform.openai.com/api-keys'}] },
+        { key: 'anthropic', name: 'Anthropic', env: 'ANTHROPIC_API_KEY', links:[{label:'API Keys', url:'https://console.anthropic.com/settings/keys'}] },
+        { key: 'huggingface', name: 'Hugging Face', env: 'HUGGINGFACE_TOKEN', links:[{label:'Tokens', url:'https://huggingface.co/settings/tokens'}] },
+        { key: 'github', name: 'GitHub', env: 'GITHUB_TOKEN', links:[{label:'Personal Access Tokens', url:'https://github.com/settings/tokens'}] },
+        { key: 'cloudflare', name: 'Cloudflare', env: 'CLOUDFLARE_API_TOKEN', links:[{label:'API Tokens', url:'https://dash.cloudflare.com/profile/api-tokens'}] }
+      ];
+      let PROVIDERS = DEFAULT_PROVIDERS;
+      const selected = new Set();
+
+      async function loadProviders() {
+        try {
+          const res = await fetch('providers.json', { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length) PROVIDERS = data;
+          }
+        } catch (e) { /* keep defaults */ }
+      }
+
+      function cardTemplate(p) {
+        const envLabel = p.env || '';
+        const links = (p.links || []).map(l => `<a href="${l.url}" target="_blank" rel="noopener noreferrer">${l.label}</a>`).join('');
+        return `<div class="card" data-key="${p.key}" data-primary="${(p.links && p.links[0] && p.links[0].url) || ''}">
+          <h3>${p.name}</h3>
+          ${envLabel ? `<div class="env" title="Click to use this env name">${envLabel}</div>` : ''}
+          <div class="links">${links}</div>
+        </div>`;
+      }
+
+      function renderProviders(filter = '') {
+        const grid = document.getElementById('grid');
+        const q = filter.trim().toLowerCase();
+        const list = PROVIDERS.filter(p => {
+          const h = `${p.name} ${p.env || ''} ${p.key}`.toLowerCase();
+          return !q || h.includes(q);
+        });
+        grid.innerHTML = list.map(cardTemplate).join('');
+        grid.querySelectorAll('.card').forEach(el => {
+          el.addEventListener('click', () => {
+            const k = el.getAttribute('data-key');
+            if (selected.has(k)) { selected.delete(k); el.classList.remove('selected'); }
+            else { selected.add(k); el.classList.add('selected'); }
+            document.getElementById('openSelected').disabled = selected.size === 0;
+          });
+          const envEl = el.querySelector('.env');
+          if (envEl) envEl.addEventListener('click', (evt) => {
+            evt.stopPropagation();
+            document.getElementById('envName').value = envEl.textContent.trim();
+            document.getElementById('envValue').focus();
+          });
+        });
+      }
+
+      function openSelected() {
+        if (!selected.size) return;
+        const urls = [];
+        PROVIDERS.forEach(p => { if (selected.has(p.key) && p.links && p.links[0]) urls.push(p.links[0].url); });
+        const first = urls.shift();
+        if (first) window.open(first, '_blank');
+        urls.forEach(u => { try { window.open(u, '_blank'); } catch {} });
+      }
+
+      // Wire UI
+      document.getElementById('saveEnv').addEventListener('click', () => {
+        const name = document.getElementById('envName').value.trim();
+        const val = document.getElementById('envValue').value.trim();
+        if (!name || !val) return;
+        SAVED[name] = val; persist();
+      });
+      document.getElementById('clearEnv').addEventListener('click', () => {
+        if (!Object.keys(SAVED).length) return;
+        const ok = confirm('Clear all saved keys from this browser?');
+        if (ok) { SAVED = {}; persist(); }
+      });
+      document.getElementById('copyEnv').addEventListener('click', copyEnv);
+      document.getElementById('downloadEnv').addEventListener('click', downloadEnv);
+      document.getElementById('openSelected').addEventListener('click', openSelected);
+      document.getElementById('search').addEventListener('input', (e) => renderProviders(e.target.value));
+
+      // Initial render + load full list
+      renderEnv();
+      renderProviders();
+      loadProviders().then(() => renderProviders(document.getElementById('search').value));
+    </script>
+  </body>
+</html>

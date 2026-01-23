@@ -1,62 +1,28 @@
-/**
- * Zod schemas for validation
- */
 
 import { z } from 'zod';
+import { SupportedServices } from './types';
 
-export const EnvironmentSchema = z.enum(['dev', 'staging', 'prod']);
-
-export const ComplianceFrameworkSchema = z.enum(['SOC2', 'GDPR', 'HIPAA', 'PCI_DSS']);
-
-export const SecretActionSchema = z.enum(['created', 'retrieved', 'rotated', 'deleted', 'validated']);
+export const EnvironmentSchema = z.enum(['dev', 'staging', 'prod', 'test']);
 
 export const CreateSecretSchema = z.object({
-  service: z.string().min(1),
+  service: z.string().refine((val) => SupportedServices.includes(val) || val.startsWith('custom_'), {
+    message: "Service must be one of the supported services or start with 'custom_'",
+  }),
   environment: EnvironmentSchema,
   scopes: z.array(z.string()).optional().default([]),
-  userId: z.string().min(1),
-});
-
-export const RotateSecretSchema = z.object({
-  secretId: z.string().uuid(),
-});
-
-export const ValidateSecretSchema = z.object({
-  secretId: z.string().uuid(),
-  framework: ComplianceFrameworkSchema,
+  userId: z.string().min(1, "User ID is required"),
 });
 
 export const AnalyzeProjectSchema = z.object({
-  projectPath: z.string().min(1),
-  dependencies: z.record(z.string()).optional().default({}),
+  projectPath: z.string(),
+  dependencies: z.record(z.string()),
 });
 
-export const SearchDocumentationSchema = z.object({
-  service: z.string().min(1),
-  query: z.string().min(1),
+export const RotateSecretSchema = z.object({
+  secretId: z.string().uuid().or(z.string().min(1)), // Supporting UUID or legacy IDs if any
 });
 
-export const AuditLogSchema = z.object({
-  secretId: z.string().uuid(),
-  userId: z.string().min(1),
-  action: SecretActionSchema,
-  ipAddress: z.string().ip().optional(),
-  userAgent: z.string().optional(),
-  metadata: z.record(z.any()).optional(),
+export const SearchDocsSchema = z.object({
+  service: z.string(),
+  q: z.string().min(1),
 });
-
-export const UserPreferencesSchema = z.object({
-  userId: z.string().min(1),
-  defaultEnvironment: EnvironmentSchema.optional(),
-  autoRotationEnabled: z.boolean().optional(),
-  notificationEmail: z.string().email().optional(),
-  complianceFrameworks: z.array(ComplianceFrameworkSchema).optional(),
-});
-
-export type CreateSecretInput = z.infer<typeof CreateSecretSchema>;
-export type RotateSecretInput = z.infer<typeof RotateSecretSchema>;
-export type ValidateSecretInput = z.infer<typeof ValidateSecretSchema>;
-export type AnalyzeProjectInput = z.infer<typeof AnalyzeProjectSchema>;
-export type SearchDocumentationInput = z.infer<typeof SearchDocumentationSchema>;
-export type AuditLogInput = z.infer<typeof AuditLogSchema>;
-export type UserPreferencesInput = z.infer<typeof UserPreferencesSchema>;

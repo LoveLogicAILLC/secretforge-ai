@@ -17,7 +17,9 @@
     "agents": "^0.1.0",
     "openai": "^4.0.0",
     "postgres": "^3.4.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "@hono/zod-validator": "^0.2.1",
+    "@secretforge/shared": "workspace:*"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.0.0",

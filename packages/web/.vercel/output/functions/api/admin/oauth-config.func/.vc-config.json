@@ -1,0 +1,18 @@
+{
+  "runtime": "edge",
+  "name": "api/admin/oauth-config",
+  "deploymentTarget": "v8-worker",
+  "entrypoint": "index.js",
+  "assets": [],
+  "framework": {
+    "slug": "nextjs",
+    "version": "14.2.33"
+  },
+  "environment": {
+    "__NEXT_BUILD_ID": "43xVRVs_yQDN4IZE4UsC_",
+    "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "k9j6B+rmX4rseQZdqOTQOzhfH2woz2MdM/sWDpIcUow=",
+    "__NEXT_PREVIEW_MODE_ID": "36fd89a733d38409ce0b9d11487e1fb8",
+    "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "72c1de4854659d17726f4cf2f7aedbf35a81cc6b3845680308bcd370d0e7a941",
+    "__NEXT_PREVIEW_MODE_SIGNING_KEY": "eef581b1315c2c4786fb4888cb81ae5d5977adb6ed202c05b6e61cf2a334c9d1"
+  }
+}
