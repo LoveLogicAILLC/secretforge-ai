@@ -15,7 +15,7 @@
   "dependencies": {
     "agents": "^0.2.8",
     "hono": "^4.11.4",
-    "openai": "^4.0.0",
+    "openai": "^6.16.0",
     "postgres": "^3.4.0",
     "zod": "^3.23.8"
   },
