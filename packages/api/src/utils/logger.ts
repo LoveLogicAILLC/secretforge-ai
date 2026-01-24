@@ -209,11 +209,7 @@ export const performanceMonitor = new PerformanceMonitor();
  * Timing decorator for async functions
  */
 export function timed(operationName: string) {
-  return function (
-    target: any,
-    propertyKey: string,
-    descriptor: PropertyDescriptor
-  ) {
+  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
     const original = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
@@ -233,10 +229,7 @@ export function timed(operationName: string) {
 /**
  * Timing helper for manual timing
  */
-export async function time<T>(
-  operationName: string,
-  fn: () => Promise<T>
-): Promise<T> {
+export async function time<T>(operationName: string, fn: () => Promise<T>): Promise<T> {
   const start = Date.now();
   try {
     return await fn();
@@ -294,11 +287,11 @@ export const errorTracker = new ErrorTracker();
  * Health check utilities
  */
 export interface HealthStatus {
-  status: "healthy" | "degraded" | "unhealthy";
+  status: 'healthy' | 'degraded' | 'unhealthy';
   timestamp: string;
   checks: {
     name: string;
-    status: "pass" | "fail";
+    status: 'pass' | 'fail';
     message?: string;
     duration?: number;
   }[];
@@ -318,7 +311,12 @@ export class HealthChecker {
    * Run all health checks
    */
   async check(): Promise<HealthStatus> {
-    const results = [];
+    const results: {
+      name: string;
+      status: 'pass' | 'fail';
+      message?: string;
+      duration?: number;
+    }[] = [];
     let allPassed = true;
 
     for (const [name, check] of this.checks) {
@@ -327,15 +325,15 @@ export class HealthChecker {
         const passed = await check();
         results.push({
           name,
-          status: passed ? "pass" : "fail",
+          status: passed ? 'pass' : 'fail',
           duration: Date.now() - start,
         });
         if (!passed) allPassed = false;
       } catch (error) {
         results.push({
           name,
-          status: "fail",
-          message: error instanceof Error ? error.message : "Unknown error",
+          status: 'fail',
+          message: error instanceof Error ? error.message : 'Unknown error',
           duration: Date.now() - start,
         });
         allPassed = false;
@@ -343,7 +341,7 @@ export class HealthChecker {
     }
 
     return {
-      status: allPassed ? "healthy" : "unhealthy",
+      status: allPassed ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
       checks: results,
     };

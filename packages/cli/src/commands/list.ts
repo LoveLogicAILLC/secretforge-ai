@@ -7,7 +7,11 @@ import { DefaultCryptoProvider } from '../crypto/CryptoProvider.js';
 /**
  * List secrets without exposing raw values
  */
-export async function listCommand(options: { env?: string; project?: string; tags?: string }): Promise<void> {
+export async function listCommand(options: {
+  env?: string;
+  project?: string;
+  tags?: string;
+}): Promise<void> {
   const configManager = new ConfigManager();
 
   // Check if initialized
@@ -34,7 +38,10 @@ export async function listCommand(options: { env?: string; project?: string; tag
     }
 
     if (options.tags) {
-      listOptions.tags = options.tags.split(',').map((t) => t.trim()).filter(Boolean);
+      listOptions.tags = options.tags
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
     }
 
     // List secrets
@@ -49,13 +56,16 @@ export async function listCommand(options: { env?: string; project?: string; tag
       console.log(chalk.bold('\n🔑 Secrets:\n'));
 
       // Group by environment
-      const byEnv = secrets.reduce((acc, secret) => {
-        if (!acc[secret.environment]) {
-          acc[secret.environment] = [];
-        }
-        acc[secret.environment].push(secret);
-        return acc;
-      }, {} as Record<string, typeof secrets>);
+      const byEnv = secrets.reduce(
+        (acc, secret) => {
+          if (!acc[secret.environment]) {
+            acc[secret.environment] = [];
+          }
+          acc[secret.environment].push(secret);
+          return acc;
+        },
+        {} as Record<string, typeof secrets>
+      );
 
       for (const [env, envSecrets] of Object.entries(byEnv)) {
         console.log(chalk.bold.cyan(`  ${env.toUpperCase()}:`));

@@ -45,10 +45,10 @@ async function run(): Promise<void> {
 
     // Scan all changed files
     const allSecrets: SecretMatch[] = [];
-    
+
     for (const file of files) {
       if (file.status === 'removed') continue;
-      
+
       // Get file content
       const { data: content } = await octokit.rest.repos.getContent({
         owner: context.repo.owner,
@@ -88,9 +88,10 @@ async function run(): Promise<void> {
 
     // Fail the check if configured
     if (failOnSecrets && allSecrets.length > 0) {
-      core.setFailed(`❌ Found ${allSecrets.length} exposed secrets. Use SecretForge to secure them!`);
+      core.setFailed(
+        `❌ Found ${allSecrets.length} exposed secrets. Use SecretForge to secure them!`
+      );
     }
-
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message);
@@ -110,7 +111,11 @@ async function detectSecrets(content: string, filename: string): Promise<SecretM
     { type: 'openai', regex: /sk-[a-zA-Z0-9]{48}/, service: 'openai' },
     { type: 'anthropic', regex: /sk-ant-[a-zA-Z0-9-]{95}/, service: 'anthropic' },
     { type: 'github', regex: /ghp_[a-zA-Z0-9]{36}/, service: 'github' },
-    { type: 'generic_api_key', regex: /['"]?[a-zA-Z0-9_-]*api[_-]?key['"]?\s*[:=]\s*['"][a-zA-Z0-9_-]{20,}['"]/, service: 'unknown' },
+    {
+      type: 'generic_api_key',
+      regex: /['"]?[a-zA-Z0-9_-]*api[_-]?key['"]?\s*[:=]\s*['"][a-zA-Z0-9_-]{20,}['"]/,
+      service: 'unknown',
+    },
     { type: 'jwt', regex: /eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*/ },
   ];
 
@@ -119,7 +124,7 @@ async function detectSecrets(content: string, filename: string): Promise<SecretM
     if (line.trim().startsWith('//') || line.trim().startsWith('#')) return;
     if (filename.includes('.env.example') || filename.includes('.env.template')) return;
 
-    patterns.forEach(pattern => {
+    patterns.forEach((pattern) => {
       const matches = line.match(pattern.regex);
       if (matches) {
         secrets.push({
@@ -155,7 +160,7 @@ async function provisionSecrets(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           service: secret.service,
@@ -206,10 +211,7 @@ No exposed secrets detected in this PR. Great job! 🎉
 <sub>Protected by [SecretForge AI](https://secretforge.ai) | [Add to your repo](https://github.com/marketplace/actions/secretforge-shield)</sub>`;
 }
 
-function generateWarningComment(
-  secrets: SecretMatch[],
-  provisioned: ProvisionResult[]
-): string {
+function generateWarningComment(secrets: SecretMatch[], provisioned: ProvisionResult[]): string {
   let comment = `## ⚠️ SecretForge Shield: Secrets Detected!
 
 Found **${secrets.length}** exposed secret${secrets.length > 1 ? 's' : ''} in this PR.
@@ -220,7 +222,7 @@ Found **${secrets.length}** exposed secret${secrets.length > 1 ? 's' : ''} in th
 |------|------|------|------------|
 `;
 
-  secrets.forEach(secret => {
+  secrets.forEach((secret) => {
     comment += `| \`${secret.file}\` | ${secret.line} | ${secret.type} | ${(secret.confidence * 100).toFixed(0)}% |\n`;
   });
 
@@ -228,7 +230,7 @@ Found **${secrets.length}** exposed secret${secrets.length > 1 ? 's' : ''} in th
 
   if (provisioned.length > 0) {
     comment += `### ✨ Auto-Provisioned Secure Replacements:\n\n`;
-    provisioned.forEach(p => {
+    provisioned.forEach((p) => {
       comment += `- ✅ **${p.service}**: Use \`process.env.${p.envVar}\` instead (Secret ID: \`${p.secretId}\`)\n`;
     });
     comment += '\n';

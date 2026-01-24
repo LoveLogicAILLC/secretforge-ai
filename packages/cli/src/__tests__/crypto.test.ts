@@ -55,10 +55,10 @@ describe('CryptoProvider', () => {
       const encrypted2 = await cryptoProvider.encrypt(plaintext);
 
       expect(encrypted1).not.toBe(encrypted2);
-      
+
       const decrypted1 = await cryptoProvider.decrypt(encrypted1);
       const decrypted2 = await cryptoProvider.decrypt(encrypted2);
-      
+
       expect(decrypted1).toBe(plaintext);
       expect(decrypted2).toBe(plaintext);
     });
@@ -100,7 +100,7 @@ describe('CryptoProvider', () => {
     it('should fail to decrypt corrupted data', async () => {
       const plaintext = 'my-secret-value';
       const encrypted = await cryptoProvider.encrypt(plaintext);
-      
+
       // Corrupt the encrypted data
       const corrupted = encrypted.slice(0, -5) + 'xxxxx';
 

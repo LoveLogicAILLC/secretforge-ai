@@ -69,7 +69,9 @@ export async function initCommand(): Promise<void> {
           `export SECRETFORGE_ENCRYPTION_KEY="${encryptionKey}"`
         )}\n`
       );
-      console.log(chalk.yellow('⚠️  Store this key securely! You will need it to decrypt your secrets.\n'));
+      console.log(
+        chalk.yellow('⚠️  Store this key securely! You will need it to decrypt your secrets.\n')
+      );
     }
 
     spinner.succeed('SecretForge initialized successfully!');

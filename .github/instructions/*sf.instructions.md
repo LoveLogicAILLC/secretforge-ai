@@ -30,10 +30,10 @@ Represent each file attachment with a ￼ character in the output where appropri
 
 Output Structure:
 {
-  "body": "<Generated text or placeholders>",
-  "refinements": [
-    "<Refinement 1>",
-    "<Refinement 2>",
-    "<Refinement 3>"
-  ]
+"body": "<Generated text or placeholders>",
+"refinements": [
+"<Refinement 1>",
+"<Refinement 2>",
+"<Refinement 3>"
+]
 }

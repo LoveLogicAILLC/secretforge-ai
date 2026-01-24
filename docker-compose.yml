@@ -6,13 +6,13 @@ services:
     image: ollama/ollama:latest
     container_name: secretforge-ollama
     ports:
-      - "11434:11434"
+      - '11434:11434'
     volumes:
       - ollama_data:/root/.ollama
     environment:
       - OLLAMA_ORIGINS=*
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:11434/api/tags']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -26,7 +26,7 @@ services:
     working_dir: /app
     command: sh -c "npm install -g wrangler miniflare && miniflare --watch --live-reload"
     ports:
-      - "8787:8787"
+      - '8787:8787'
     volumes:
       - ./packages/api:/app
       - miniflare_cache:/root/.cache
@@ -45,7 +45,7 @@ services:
     image: postgres:16-alpine
     container_name: secretforge-postgres
     ports:
-      - "5432:5432"
+      - '5432:5432'
     environment:
       - POSTGRES_USER=secretforge
       - POSTGRES_PASSWORD=secretforge_dev_password
@@ -53,7 +53,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U secretforge"]
+      test: ['CMD-SHELL', 'pg_isready -U secretforge']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -65,12 +65,12 @@ services:
     image: redis:7-alpine
     container_name: secretforge-redis
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 5s
       retries: 3

@@ -30,9 +30,11 @@ Add to Claude Code settings (`.claude/mcp.json`):
 ## Available Tools
 
 ### analyze_project
+
 Analyzes project directory to detect required API keys.
 
 **Input:**
+
 ```json
 {
   "projectPath": "/path/to/project"
@@ -40,6 +42,7 @@ Analyzes project directory to detect required API keys.
 ```
 
 **Output:**
+
 ```json
 {
   "projectPath": "/path/to/project",
@@ -50,9 +53,11 @@ Analyzes project directory to detect required API keys.
 ```
 
 ### create_secret
+
 Creates and provisions a new API key.
 
 **Input:**
+
 ```json
 {
   "service": "stripe",
@@ -62,9 +67,11 @@ Creates and provisions a new API key.
 ```
 
 ### rotate_secret
+
 Rotates an existing API key.
 
 **Input:**
+
 ```json
 {
   "secretId": "secret-123"
@@ -72,9 +79,11 @@ Rotates an existing API key.
 ```
 
 ### search_documentation
+
 Searches API documentation for a service.
 
 **Input:**
+
 ```json
 {
   "service": "stripe",
@@ -83,9 +92,11 @@ Searches API documentation for a service.
 ```
 
 ### validate_security
+
 Validates security compliance for a secret.
 
 **Input:**
+
 ```json
 {
   "secretId": "secret-123",
@@ -96,16 +107,20 @@ Validates security compliance for a secret.
 ## Available Prompts
 
 ### provision_api_key
+
 Intelligent API key provisioning workflow.
 
 **Arguments:**
+
 - `service` (required): Service requiring API key
 - `context` (optional): Project context
 
 ### security_audit
+
 Comprehensive security audit for secrets.
 
 **Arguments:**
+
 - `scope` (required): Audit scope (project, organization, service)
 
 ## Usage with Claude
@@ -124,6 +139,7 @@ Claude: [Uses validate_security tool with framework="SOC2"]
 ## Configuration
 
 Set environment variables:
+
 - `SECRETFORGE_API` - API endpoint URL (default: http://localhost:8787)
 
 ## Development

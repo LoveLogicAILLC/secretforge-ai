@@ -19,12 +19,15 @@ npx @secretforge/cli
 ## Commands
 
 ### Initialize Project
+
 ```bash
 secretforge init
 ```
+
 Analyzes `package.json`, detects required services, offers to provision keys.
 
 ### Request API Key
+
 ```bash
 secretforge request <service> [options]
 
@@ -38,16 +41,19 @@ Examples:
 ```
 
 ### Rotate Secret
+
 ```bash
 secretforge rotate <secret-id>
 ```
 
 ### List Secrets
+
 ```bash
 secretforge list
 ```
 
 ### Chat with AI
+
 ```bash
 secretforge chat [message]
 

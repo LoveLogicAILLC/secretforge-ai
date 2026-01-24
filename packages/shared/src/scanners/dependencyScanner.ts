@@ -23,52 +23,62 @@ export interface ServicePattern {
  */
 const SERVICE_PATTERNS: ServicePattern[] = [
   // Payment processors
-  { name: "stripe", patterns: ["stripe", "@stripe/"], confidence: 0.99, scopes: ["read", "write"] },
-  { name: "paypal", patterns: ["paypal", "@paypal/"], confidence: 0.99 },
-  { name: "square", patterns: ["square"], confidence: 0.95 },
+  { name: 'stripe', patterns: ['stripe', '@stripe/'], confidence: 0.99, scopes: ['read', 'write'] },
+  { name: 'paypal', patterns: ['paypal', '@paypal/'], confidence: 0.99 },
+  { name: 'square', patterns: ['square'], confidence: 0.95 },
 
   // AI/ML services
-  { name: "openai", patterns: ["openai"], confidence: 0.99, scopes: ["api.read", "api.write"] },
-  { name: "anthropic", patterns: ["@anthropic-ai/sdk", "anthropic"], confidence: 0.99 },
-  { name: "cohere", patterns: ["cohere-ai", "cohere"], confidence: 0.95 },
-  { name: "huggingface", patterns: ["@huggingface/", "transformers"], confidence: 0.90 },
+  { name: 'openai', patterns: ['openai'], confidence: 0.99, scopes: ['api.read', 'api.write'] },
+  { name: 'anthropic', patterns: ['@anthropic-ai/sdk', 'anthropic'], confidence: 0.99 },
+  { name: 'cohere', patterns: ['cohere-ai', 'cohere'], confidence: 0.95 },
+  { name: 'huggingface', patterns: ['@huggingface/', 'transformers'], confidence: 0.9 },
 
   // Cloud providers
-  { name: "aws", patterns: ["aws-sdk", "@aws-sdk/"], confidence: 0.99, scopes: ["s3:read", "s3:write", "lambda:invoke"] },
-  { name: "google-cloud", patterns: ["@google-cloud/", "googleapis"], confidence: 0.99 },
-  { name: "azure", patterns: ["@azure/", "azure-"], confidence: 0.99 },
+  {
+    name: 'aws',
+    patterns: ['aws-sdk', '@aws-sdk/'],
+    confidence: 0.99,
+    scopes: ['s3:read', 's3:write', 'lambda:invoke'],
+  },
+  { name: 'google-cloud', patterns: ['@google-cloud/', 'googleapis'], confidence: 0.99 },
+  { name: 'azure', patterns: ['@azure/', 'azure-'], confidence: 0.99 },
 
   // Databases
-  { name: "mongodb", patterns: ["mongodb", "mongoose"], confidence: 0.99 },
-  { name: "postgresql", patterns: ["pg", "postgres", "pg-promise", "psycopg2"], confidence: 0.95 },
-  { name: "mysql", patterns: ["mysql", "mysql2", "PyMySQL"], confidence: 0.95 },
-  { name: "redis", patterns: ["redis", "ioredis", "redis-py"], confidence: 0.95 },
-  { name: "supabase", patterns: ["@supabase/"], confidence: 0.99 },
+  { name: 'mongodb', patterns: ['mongodb', 'mongoose'], confidence: 0.99 },
+  { name: 'postgresql', patterns: ['pg', 'postgres', 'pg-promise', 'psycopg2'], confidence: 0.95 },
+  { name: 'mysql', patterns: ['mysql', 'mysql2', 'PyMySQL'], confidence: 0.95 },
+  { name: 'redis', patterns: ['redis', 'ioredis', 'redis-py'], confidence: 0.95 },
+  { name: 'supabase', patterns: ['@supabase/'], confidence: 0.99 },
 
   // Communication
-  { name: "twilio", patterns: ["twilio"], confidence: 0.99, scopes: ["messaging", "voice"] },
-  { name: "sendgrid", patterns: ["@sendgrid/", "sendgrid"], confidence: 0.99, scopes: ["mail.send"] },
-  { name: "mailgun", patterns: ["mailgun", "mailgun-js"], confidence: 0.95 },
-  { name: "resend", patterns: ["resend"], confidence: 0.95 },
+  { name: 'twilio', patterns: ['twilio'], confidence: 0.99, scopes: ['messaging', 'voice'] },
+  {
+    name: 'sendgrid',
+    patterns: ['@sendgrid/', 'sendgrid'],
+    confidence: 0.99,
+    scopes: ['mail.send'],
+  },
+  { name: 'mailgun', patterns: ['mailgun', 'mailgun-js'], confidence: 0.95 },
+  { name: 'resend', patterns: ['resend'], confidence: 0.95 },
 
   // Auth & Identity
-  { name: "auth0", patterns: ["auth0", "@auth0/"], confidence: 0.99 },
-  { name: "clerk", patterns: ["@clerk/"], confidence: 0.99 },
-  { name: "firebase", patterns: ["firebase", "@firebase/"], confidence: 0.95 },
+  { name: 'auth0', patterns: ['auth0', '@auth0/'], confidence: 0.99 },
+  { name: 'clerk', patterns: ['@clerk/'], confidence: 0.99 },
+  { name: 'firebase', patterns: ['firebase', '@firebase/'], confidence: 0.95 },
 
   // Analytics
-  { name: "segment", patterns: ["@segment/"], confidence: 0.95 },
-  { name: "mixpanel", patterns: ["mixpanel"], confidence: 0.95 },
-  { name: "posthog", patterns: ["posthog-"], confidence: 0.95 },
+  { name: 'segment', patterns: ['@segment/'], confidence: 0.95 },
+  { name: 'mixpanel', patterns: ['mixpanel'], confidence: 0.95 },
+  { name: 'posthog', patterns: ['posthog-'], confidence: 0.95 },
 
   // Version control
-  { name: "github", patterns: ["@octokit/", "github"], confidence: 0.90 },
-  { name: "gitlab", patterns: ["@gitlab/"], confidence: 0.90 },
+  { name: 'github', patterns: ['@octokit/', 'github'], confidence: 0.9 },
+  { name: 'gitlab', patterns: ['@gitlab/'], confidence: 0.9 },
 
   // Other
-  { name: "shopify", patterns: ["@shopify/"], confidence: 0.95 },
-  { name: "vercel", patterns: ["@vercel/"], confidence: 0.90 },
-  { name: "cloudflare", patterns: ["@cloudflare/", "cloudflare"], confidence: 0.90 },
+  { name: 'shopify', patterns: ['@shopify/'], confidence: 0.95 },
+  { name: 'vercel', patterns: ['@vercel/'], confidence: 0.9 },
+  { name: 'cloudflare', patterns: ['@cloudflare/', 'cloudflare'], confidence: 0.9 },
 ];
 
 /**
@@ -85,7 +95,7 @@ export function scanNodeDependencies(packageJson: any): DependencyScanResult {
   return {
     services,
     confidence,
-    language: "javascript",
+    language: 'javascript',
     packageManager: detectNodePackageManager(packageJson),
     dependencies,
   };
@@ -98,16 +108,16 @@ export function scanPythonDependencies(requirementsContent: string): DependencyS
   const dependencies: Record<string, string> = {};
 
   // Parse requirements.txt format
-  const lines = requirementsContent.split("\n");
+  const lines = requirementsContent.split('\n');
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
+    if (!trimmed || trimmed.startsWith('#')) continue;
 
     // Handle various formats: package, package==1.0.0, package>=1.0.0
     const match = trimmed.match(/^([a-zA-Z0-9_-]+)(?:[=<>]=?.*)?$/);
     if (match) {
       const packageName = match[1];
-      dependencies[packageName] = "*";
+      dependencies[packageName] = '*';
     }
   }
 
@@ -116,8 +126,8 @@ export function scanPythonDependencies(requirementsContent: string): DependencyS
   return {
     services,
     confidence,
-    language: "python",
-    packageManager: "pip",
+    language: 'python',
+    packageManager: 'pip',
     dependencies,
   };
 }
@@ -129,22 +139,22 @@ export function scanGoDependencies(goModContent: string): DependencyScanResult {
   const dependencies: Record<string, string> = {};
 
   // Parse go.mod format
-  const lines = goModContent.split("\n");
+  const lines = goModContent.split('\n');
   let inRequire = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
 
-    if (trimmed === "require (") {
+    if (trimmed === 'require (') {
       inRequire = true;
       continue;
     }
-    if (trimmed === ")") {
+    if (trimmed === ')') {
       inRequire = false;
       continue;
     }
 
-    if (inRequire || trimmed.startsWith("require ")) {
+    if (inRequire || trimmed.startsWith('require ')) {
       const match = trimmed.match(/(?:require )?([\w.\-/]+)\s+v?([\d.]+)/);
       if (match) {
         dependencies[match[1]] = match[2];
@@ -157,8 +167,8 @@ export function scanGoDependencies(goModContent: string): DependencyScanResult {
   return {
     services,
     confidence,
-    language: "go",
-    packageManager: "go",
+    language: 'go',
+    packageManager: 'go',
     dependencies,
   };
 }
@@ -170,15 +180,15 @@ export function scanRubyDependencies(gemfileContent: string): DependencyScanResu
   const dependencies: Record<string, string> = {};
 
   // Parse Gemfile format
-  const lines = gemfileContent.split("\n");
+  const lines = gemfileContent.split('\n');
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
+    if (!trimmed || trimmed.startsWith('#')) continue;
 
     // Match: gem 'name', 'version' or gem "name", "version"
     const match = trimmed.match(/gem\s+['"]([^'"]+)['"]\s*(?:,\s*['"]([^'"]+)['"])?/);
     if (match) {
-      dependencies[match[1]] = match[2] || "*";
+      dependencies[match[1]] = match[2] || '*';
     }
   }
 
@@ -187,8 +197,8 @@ export function scanRubyDependencies(gemfileContent: string): DependencyScanResu
   return {
     services,
     confidence,
-    language: "ruby",
-    packageManager: "bundler",
+    language: 'ruby',
+    packageManager: 'bundler',
     dependencies,
   };
 }
@@ -199,7 +209,7 @@ export function scanRubyDependencies(gemfileContent: string): DependencyScanResu
 export function scanPHPDependencies(composerJson: any): DependencyScanResult {
   const dependencies = {
     ...composerJson.require,
-    ...composerJson["require-dev"],
+    ...composerJson['require-dev'],
   };
 
   const { services, confidence } = detectServices(dependencies);
@@ -207,8 +217,8 @@ export function scanPHPDependencies(composerJson: any): DependencyScanResult {
   return {
     services,
     confidence,
-    language: "php",
-    packageManager: "composer",
+    language: 'php',
+    packageManager: 'composer',
     dependencies,
   };
 }
@@ -220,17 +230,17 @@ export function scanRustDependencies(cargoTomlContent: string): DependencyScanRe
   const dependencies: Record<string, string> = {};
 
   // Parse Cargo.toml format (basic)
-  const lines = cargoTomlContent.split("\n");
+  const lines = cargoTomlContent.split('\n');
   let inDependencies = false;
 
   for (const line of lines) {
     const trimmed = line.trim();
 
-    if (trimmed === "[dependencies]" || trimmed === "[dev-dependencies]") {
+    if (trimmed === '[dependencies]' || trimmed === '[dev-dependencies]') {
       inDependencies = true;
       continue;
     }
-    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
       inDependencies = false;
       continue;
     }
@@ -248,8 +258,8 @@ export function scanRustDependencies(cargoTomlContent: string): DependencyScanRe
   return {
     services,
     confidence,
-    language: "rust",
-    packageManager: "cargo",
+    language: 'rust',
+    packageManager: 'cargo',
     dependencies,
   };
 }
@@ -290,12 +300,12 @@ function detectServices(dependencies: Record<string, string>): {
  */
 function detectNodePackageManager(packageJson: any): string {
   if (packageJson.packageManager) {
-    if (packageJson.packageManager.startsWith("pnpm")) return "pnpm";
-    if (packageJson.packageManager.startsWith("yarn")) return "yarn";
-    return "npm";
+    if (packageJson.packageManager.startsWith('pnpm')) return 'pnpm';
+    if (packageJson.packageManager.startsWith('yarn')) return 'yarn';
+    return 'npm';
   }
 
-  return "npm"; // Default
+  return 'npm'; // Default
 }
 
 /**
@@ -303,49 +313,55 @@ function detectNodePackageManager(packageJson: any): string {
  */
 export function scanDependencies(
   content: string,
-  fileType?: "package.json" | "requirements.txt" | "go.mod" | "Gemfile" | "composer.json" | "Cargo.toml"
+  fileType?:
+    | 'package.json'
+    | 'requirements.txt'
+    | 'go.mod'
+    | 'Gemfile'
+    | 'composer.json'
+    | 'Cargo.toml'
 ): DependencyScanResult {
   try {
     // Auto-detect if not specified
     if (!fileType) {
-      if (content.trim().startsWith("{") && content.includes("dependencies")) {
+      if (content.trim().startsWith('{') && content.includes('dependencies')) {
         // Looks like JSON
         const json = JSON.parse(content);
         if (json.dependencies || json.devDependencies) {
-          fileType = "package.json";
+          fileType = 'package.json';
         } else if (json.require) {
-          fileType = "composer.json";
+          fileType = 'composer.json';
         }
-      } else if (content.includes("require (") || content.includes("go ")) {
-        fileType = "go.mod";
+      } else if (content.includes('require (') || content.includes('go ')) {
+        fileType = 'go.mod';
       } else if (content.includes('gem "') || content.includes("gem '")) {
-        fileType = "Gemfile";
-      } else if (content.includes("[dependencies]")) {
-        fileType = "Cargo.toml";
+        fileType = 'Gemfile';
+      } else if (content.includes('[dependencies]')) {
+        fileType = 'Cargo.toml';
       } else {
-        fileType = "requirements.txt"; // Default to Python
+        fileType = 'requirements.txt'; // Default to Python
       }
     }
 
     switch (fileType) {
-      case "package.json":
+      case 'package.json':
         return scanNodeDependencies(JSON.parse(content));
-      case "requirements.txt":
+      case 'requirements.txt':
         return scanPythonDependencies(content);
-      case "go.mod":
+      case 'go.mod':
         return scanGoDependencies(content);
-      case "Gemfile":
+      case 'Gemfile':
         return scanRubyDependencies(content);
-      case "composer.json":
+      case 'composer.json':
         return scanPHPDependencies(JSON.parse(content));
-      case "Cargo.toml":
+      case 'Cargo.toml':
         return scanRustDependencies(content);
       default:
         throw new Error(`Unsupported file type: ${fileType}`);
     }
   } catch (error) {
     throw new Error(
-      `Failed to scan dependencies: ${error instanceof Error ? error.message : "Unknown error"}`
+      `Failed to scan dependencies: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
   }
 }
@@ -355,7 +371,7 @@ export function scanDependencies(
  */
 export function getRecommendedScopes(service: string): string[] {
   const pattern = SERVICE_PATTERNS.find((p) => p.name === service);
-  return pattern?.scopes || ["read", "write"];
+  return pattern?.scopes || ['read', 'write'];
 }
 
 /**

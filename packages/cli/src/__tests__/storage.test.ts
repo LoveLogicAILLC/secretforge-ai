@@ -55,7 +55,7 @@ describe('SecretStorage', () => {
       });
 
       expect(secret.value_encrypted).not.toBe('secret-value');
-      
+
       const decrypted = await storage.decryptSecret(secret);
       expect(decrypted).toBe('secret-value');
     });
@@ -228,10 +228,10 @@ describe('SecretStorage', () => {
       });
 
       const updated = await storage.updateSecret(secret.id, 'new-value');
-      
+
       expect(updated.id).toBe(secret.id);
       expect(updated.updated_at).not.toBe(secret.updated_at);
-      
+
       const decrypted = await storage.decryptSecret(updated);
       expect(decrypted).toBe('new-value');
     });

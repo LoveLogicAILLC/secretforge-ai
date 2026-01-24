@@ -121,6 +121,7 @@ All automation tools and best practices have been set up to ensure code quality,
 ## 🔄 Automated Processes Flow
 
 ### On Every Commit (Local)
+
 1. **Pre-commit hook** runs:
    - ESLint fixes code issues
    - Prettier formats code
@@ -128,6 +129,7 @@ All automation tools and best practices have been set up to ensure code quality,
 2. **Commit-msg hook** validates commit message format
 
 ### On Every Push/PR
+
 1. **CI Workflow** runs:
    - Linting
    - Type checking
@@ -141,10 +143,12 @@ All automation tools and best practices have been set up to ensure code quality,
    - Auto-formats code if needed
 
 ### Weekly (Automated)
+
 1. **Dependabot** checks for dependency updates
 2. **Security Workflow** runs scheduled scans
 
 ### On Main Branch Push
+
 1. **Deploy Workflow** runs:
    - Deploys API to Cloudflare
    - Deploys web to Vercel
@@ -153,6 +157,7 @@ All automation tools and best practices have been set up to ensure code quality,
 ## 📊 Status Badges
 
 The following badges are now in README.md:
+
 - CI Status
 - Security Status
 - Codecov Coverage
@@ -161,6 +166,7 @@ The following badges are now in README.md:
 ## 🎓 For Contributors
 
 All automation is transparent and helpful:
+
 - **No manual setup required** - git hooks install automatically
 - **Clear error messages** - automation provides actionable feedback
 - **Auto-fixing** - many issues are automatically fixed
@@ -169,6 +175,7 @@ All automation is transparent and helpful:
 ## 🔐 Security
 
 Multiple layers of security scanning:
+
 - TruffleHog for secret detection
 - CodeQL for code vulnerability analysis
 - pnpm audit for dependency vulnerabilities
@@ -185,6 +192,7 @@ Multiple layers of security scanning:
 ## 🎯 Summary
 
 **100% of requested automation has been implemented:**
+
 - ✅ GitHub Actions for linting
 - ✅ Continuous Integration on every PR
 - ✅ Dependency vulnerability checks (Dependabot + audit)
@@ -196,6 +204,7 @@ Multiple layers of security scanning:
 - ✅ PR and Issue templates
 
 **All goals achieved:**
+
 - ✅ Automated quality checks
 - ✅ Well-tested code (with coverage tracking)
 - ✅ Maintainable at scale
@@ -203,4 +212,4 @@ Multiple layers of security scanning:
 
 ---
 
-*Last updated: 2025-10-11*
+_Last updated: 2025-10-11_

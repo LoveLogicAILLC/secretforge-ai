@@ -32,6 +32,7 @@ sf init
 ```
 
 This will:
+
 - Create a `.secretforge.json` configuration file
 - Set up a local SQLite database
 - Generate an encryption key (store this securely!)
@@ -93,9 +94,11 @@ sf export --env prod --format yaml
 Initialize SecretForge in the current project.
 
 **Options:**
+
 - Interactive prompts for project name and default environment
 
 **Creates:**
+
 - `.secretforge.json` - Project configuration
 - SQLite database in `~/.secretforge/<project>.db`
 
@@ -104,13 +107,16 @@ Initialize SecretForge in the current project.
 Add a new secret interactively.
 
 **Arguments:**
+
 - `NAME` - Optional secret name (will prompt if not provided)
 
 **Options:**
+
 - `-e, --env <environment>` - Environment (dev/staging/prod)
 - `-t, --tags <tags>` - Comma-separated tags
 
 **Example:**
+
 ```bash
 sf add STRIPE_API_KEY --env prod --tags payment,api
 ```
@@ -120,11 +126,13 @@ sf add STRIPE_API_KEY --env prod --tags payment,api
 List all secrets without exposing values.
 
 **Options:**
+
 - `-e, --env <environment>` - Filter by environment
 - `-p, --project <project>` - Filter by project
 - `-t, --tags <tags>` - Filter by tags (comma-separated)
 
 **Example:**
+
 ```bash
 sf list --env prod --tags api
 ```
@@ -134,10 +142,12 @@ sf list --env prod --tags api
 Inject encrypted secrets into target files.
 
 **Options:**
+
 - `-e, --env <environment>` - **Required.** Environment to inject
 - `-f, --file <file>` - Output file (default: `.env.<environment>`)
 
 **Example:**
+
 ```bash
 sf inject --env prod --file .env.production
 ```
@@ -147,10 +157,12 @@ sf inject --env prod --file .env.production
 Export secrets in various formats.
 
 **Options:**
+
 - `-e, --env <environment>` - Filter by environment
 - `-f, --format <format>` - Output format: env (default), json, yaml
 
 **Example:**
+
 ```bash
 sf export --env prod --format json > secrets.json
 ```
@@ -173,6 +185,7 @@ SecretForge stores its configuration in `.secretforge.json`:
 ### Encryption
 
 All secrets are encrypted using **AES-256-GCM** with:
+
 - Randomly generated 12-byte initialization vectors (IV)
 - Authentication tags for integrity verification
 - Base64 encoding for storage
@@ -182,11 +195,13 @@ All secrets are encrypted using **AES-256-GCM** with:
 The encryption key is stored in the `SECRETFORGE_ENCRYPTION_KEY` environment variable.
 
 **Generate a new key:**
+
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
 **Set the key:**
+
 ```bash
 export SECRETFORGE_ENCRYPTION_KEY="your-base64-key-here"
 ```

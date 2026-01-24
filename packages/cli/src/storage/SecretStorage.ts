@@ -164,7 +164,11 @@ export class SQLiteSecretStorage implements SecretStorage {
     return this.rowToSecret(row);
   }
 
-  async getSecretByName(name: string, project: string, environment: string): Promise<Secret | null> {
+  async getSecretByName(
+    name: string,
+    project: string,
+    environment: string
+  ): Promise<Secret | null> {
     const stmt = this.db.prepare(
       'SELECT * FROM secrets WHERE name = ? AND project = ? AND environment = ?'
     );

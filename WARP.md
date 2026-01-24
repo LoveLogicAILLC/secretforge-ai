@@ -70,25 +70,27 @@ This is a Turborepo-based monorepo with these packages:
 - **packages/mcp-server**: Model Context Protocol server integration
 - **packages/shared**: Shared utilities and types
 
-**Core Dependencies & Environment Variables**  
-- `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `ENCRYPTION_KEY`, `SECRETFORGE_API` for AI  
-- `DATABASE_URL` for relational storage (SQLite/D1 or external)  
+**Core Dependencies & Environment Variables**
+
+- `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `ENCRYPTION_KEY`, `SECRETFORGE_API` for AI
+- `DATABASE_URL` for relational storage (SQLite/D1 or external)
 - `REDIS_URL` for caching/state
 
 **Turborepo Pipeline**  
 Defined in `turbo.json`, with tasks:
-- **build**: compile TypeScript and bundle outputs  
-- **dev**: run dev servers (no cache)  
-- **lint**: run ESLint  
+
+- **build**: compile TypeScript and bundle outputs
+- **dev**: run dev servers (no cache)
+- **lint**: run ESLint
 - **test**: run tests and output coverage
 
 ## Key Configuration & Workflows
 
-- **Husky**: `.husky/` for Git hooks (pre-commit, commit-msg)  
-- **commitlint**: `commitlint.config.js` for Conventional Commits  
-- **lint-staged**: `.lintstagedrc.json` for staged-file linting  
-- **.env.example**: template for environment variables  
-- **pnpm-workspace.yaml**: workspace definition  
-- **turbo.json**: Turborepo build graph and env settings  
-- **packages/api/wrangler.toml**: Cloudflare Workers config  
-- **packages/web/next.config.js**: Next.js settings  
+- **Husky**: `.husky/` for Git hooks (pre-commit, commit-msg)
+- **commitlint**: `commitlint.config.js` for Conventional Commits
+- **lint-staged**: `.lintstagedrc.json` for staged-file linting
+- **.env.example**: template for environment variables
+- **pnpm-workspace.yaml**: workspace definition
+- **turbo.json**: Turborepo build graph and env settings
+- **packages/api/wrangler.toml**: Cloudflare Workers config
+- **packages/web/next.config.js**: Next.js settings

@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import app from "../index";
-import { createJWT } from "../middleware/auth";
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import app from '../index';
+import { createJWT } from '../middleware/auth';
 
 /**
  * Integration tests for SecretForge API
@@ -14,11 +14,11 @@ const TEST_ENV = {
   VECTOR_DB: createMockVectorize(),
   SECRET_AGENT: createMockAgentNamespace(),
   HYPERDRIVE: {} as any,
-  OPENAI_API_KEY: "sk-test-key",
-  ANTHROPIC_API_KEY: "sk-ant-test-key",
-  ENCRYPTION_KEY: "test-encryption-key-32-bytes-long",
-  JWT_SECRET: "test-jwt-secret-32-bytes-long",
-  API_KEY_SALT: "test-api-key-salt-32-bytes-long",
+  OPENAI_API_KEY: 'sk-test-key',
+  ANTHROPIC_API_KEY: 'sk-ant-test-key',
+  ENCRYPTION_KEY: 'test-encryption-key-32-bytes-long',
+  JWT_SECRET: 'test-jwt-secret-32-bytes-long',
+  API_KEY_SALT: 'test-api-key-salt-32-bytes-long',
 };
 
 let authToken: string;
@@ -28,36 +28,36 @@ beforeAll(async () => {
   // Generate test JWT
   authToken = await createJWT(
     {
-      userId: "test-user-id",
-      email: "test@example.com",
-      tier: "pro",
+      userId: 'test-user-id',
+      email: 'test@example.com',
+      tier: 'pro',
     },
     TEST_ENV.JWT_SECRET
   );
 });
 
-describe("Health Check", () => {
-  it("should return healthy status", async () => {
-    const req = new Request("http://localhost/health");
+describe('Health Check', () => {
+  it('should return healthy status', async () => {
+    const req = new Request('http://localhost/health');
     const res = await app.fetch(req, TEST_ENV);
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    expect(data.status).toBe("healthy");
+    expect(data.status).toBe('healthy');
     expect(data.timestamp).toBeDefined();
   });
 });
 
-describe("Authentication", () => {
-  it("should reject requests without auth token", async () => {
-    const req = new Request("http://localhost/api/secrets");
+describe('Authentication', () => {
+  it('should reject requests without auth token', async () => {
+    const req = new Request('http://localhost/api/secrets');
     const res = await app.fetch(req, TEST_ENV);
 
     expect(res.status).toBe(401);
   });
 
-  it("should accept requests with valid JWT", async () => {
-    const req = new Request("http://localhost/api/secrets", {
+  it('should accept requests with valid JWT', async () => {
+    const req = new Request('http://localhost/api/secrets', {
       headers: {
         Authorization: `Bearer ${authToken}`,
       },
@@ -67,10 +67,10 @@ describe("Authentication", () => {
     expect(res.status).not.toBe(401);
   });
 
-  it("should accept requests with valid API key", async () => {
-    const req = new Request("http://localhost/api/secrets", {
+  it('should accept requests with valid API key', async () => {
+    const req = new Request('http://localhost/api/secrets', {
       headers: {
-        "X-API-Key": "sf_test_api_key_12345678901234567890",
+        'X-API-Key': 'sf_test_api_key_12345678901234567890',
       },
     });
     const res = await app.fetch(req, TEST_ENV);
@@ -80,15 +80,15 @@ describe("Authentication", () => {
   });
 });
 
-describe("User Signup and Login", () => {
-  it("should create new user account", async () => {
-    const req = new Request("http://localhost/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+describe('User Signup and Login', () => {
+  it('should create new user account', async () => {
+    const req = new Request('http://localhost/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: "newuser@example.com",
-        password: "SecurePass123",
-        tier: "free",
+        email: 'newuser@example.com',
+        password: 'SecurePass123',
+        tier: 'free',
       }),
     });
 
@@ -96,18 +96,18 @@ describe("User Signup and Login", () => {
     const data = await res.json();
 
     expect(res.status).toBe(201);
-    expect(data.user.email).toBe("newuser@example.com");
+    expect(data.user.email).toBe('newuser@example.com');
     expect(data.token).toBeDefined();
   });
 
-  it("should reject weak passwords", async () => {
-    const req = new Request("http://localhost/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+  it('should reject weak passwords', async () => {
+    const req = new Request('http://localhost/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: "test2@example.com",
-        password: "weak",
-        tier: "free",
+        email: 'test2@example.com',
+        password: 'weak',
+        tier: 'free',
       }),
     });
 
@@ -115,13 +115,13 @@ describe("User Signup and Login", () => {
     expect(res.status).toBe(400);
   });
 
-  it("should login with correct credentials", async () => {
-    const req = new Request("http://localhost/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+  it('should login with correct credentials', async () => {
+    const req = new Request('http://localhost/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: "test@example.com",
-        password: "SecurePass123",
+        email: 'test@example.com',
+        password: 'SecurePass123',
       }),
     });
 
@@ -133,18 +133,18 @@ describe("User Signup and Login", () => {
   });
 });
 
-describe("Secret Management", () => {
-  it("should create a new secret", async () => {
-    const req = new Request("http://localhost/api/secrets", {
-      method: "POST",
+describe('Secret Management', () => {
+  it('should create a new secret', async () => {
+    const req = new Request('http://localhost/api/secrets', {
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${authToken}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        service: "stripe",
-        environment: "development",
-        scopes: ["read_write"],
+        service: 'stripe',
+        environment: 'development',
+        scopes: ['read_write'],
       }),
     });
 
@@ -152,13 +152,13 @@ describe("Secret Management", () => {
     const data = await res.json();
 
     expect(res.status).toBe(201);
-    expect(data.secret.service).toBe("stripe");
+    expect(data.secret.service).toBe('stripe');
     expect(data.secret.id).toBeDefined();
     testSecretId = data.secret.id;
   });
 
-  it("should list all secrets", async () => {
-    const req = new Request("http://localhost/api/secrets", {
+  it('should list all secrets', async () => {
+    const req = new Request('http://localhost/api/secrets', {
       headers: {
         Authorization: `Bearer ${authToken}`,
       },
@@ -171,7 +171,7 @@ describe("Secret Management", () => {
     expect(Array.isArray(data.secrets)).toBe(true);
   });
 
-  it("should retrieve specific secret", async () => {
+  it('should retrieve specific secret', async () => {
     const req = new Request(`http://localhost/api/secrets/${testSecretId}`, {
       headers: {
         Authorization: `Bearer ${authToken}`,
@@ -186,12 +186,12 @@ describe("Secret Management", () => {
     expect(data.value).toBeDefined();
   });
 
-  it("should rotate secret", async () => {
+  it('should rotate secret', async () => {
     const req = new Request(`http://localhost/api/secrets/${testSecretId}/rotate`, {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${authToken}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({}),
     });
@@ -200,12 +200,12 @@ describe("Secret Management", () => {
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    expect(data.message).toContain("rotated");
+    expect(data.message).toContain('rotated');
   });
 
-  it("should delete secret", async () => {
+  it('should delete secret', async () => {
     const req = new Request(`http://localhost/api/secrets/${testSecretId}`, {
-      method: "DELETE",
+      method: 'DELETE',
       headers: {
         Authorization: `Bearer ${authToken}`,
       },
@@ -215,22 +215,22 @@ describe("Secret Management", () => {
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    expect(data.message).toContain("deleted");
+    expect(data.message).toContain('deleted');
   });
 });
 
-describe("Project Analysis", () => {
-  it("should analyze project dependencies", async () => {
-    const req = new Request("http://localhost/api/analyze", {
-      method: "POST",
+describe('Project Analysis', () => {
+  it('should analyze project dependencies', async () => {
+    const req = new Request('http://localhost/api/analyze', {
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${authToken}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         dependencies: {
-          stripe: "^12.0.0",
-          openai: "^4.0.0",
+          stripe: '^12.0.0',
+          openai: '^4.0.0',
         },
       }),
     });
@@ -239,38 +239,41 @@ describe("Project Analysis", () => {
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    expect(data.detectedServices).toContain("stripe");
-    expect(data.detectedServices).toContain("openai");
+    expect(data.detectedServices).toContain('stripe');
+    expect(data.detectedServices).toContain('openai');
     expect(data.recommendations).toBeDefined();
   });
 });
 
-describe("Compliance Validation", () => {
-  it("should validate secret compliance", async () => {
-    const req = new Request(`http://localhost/api/secrets/${testSecretId}/validate?framework=SOC2`, {
-      headers: {
-        Authorization: `Bearer ${authToken}`,
-      },
-    });
+describe('Compliance Validation', () => {
+  it('should validate secret compliance', async () => {
+    const req = new Request(
+      `http://localhost/api/secrets/${testSecretId}/validate?framework=SOC2`,
+      {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      }
+    );
 
     const res = await app.fetch(req, TEST_ENV);
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    expect(data.framework).toBe("SOC2");
+    expect(data.framework).toBe('SOC2');
     expect(data.compliant).toBeDefined();
   });
 });
 
-describe("Rate Limiting", () => {
-  it("should enforce rate limits", async () => {
+describe('Rate Limiting', () => {
+  it('should enforce rate limits', async () => {
     const requests = [];
 
     // Make 200 requests (exceeds free tier limit)
     for (let i = 0; i < 200; i++) {
       requests.push(
         app.fetch(
-          new Request("http://localhost/api/secrets", {
+          new Request('http://localhost/api/secrets', {
             headers: {
               Authorization: `Bearer ${authToken}`,
             },
@@ -288,16 +291,16 @@ describe("Rate Limiting", () => {
   });
 });
 
-describe("Tier-based Access Control", () => {
-  it("should allow pro tier to access AI features", async () => {
-    const req = new Request("http://localhost/api/agent/chat", {
-      method: "POST",
+describe('Tier-based Access Control', () => {
+  it('should allow pro tier to access AI features', async () => {
+    const req = new Request('http://localhost/api/agent/chat', {
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${authToken}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message: "Help me rotate my Stripe keys",
+        message: 'Help me rotate my Stripe keys',
       }),
     });
 
@@ -305,24 +308,24 @@ describe("Tier-based Access Control", () => {
     expect(res.status).not.toBe(403);
   });
 
-  it("should deny free tier access to AI features", async () => {
+  it('should deny free tier access to AI features', async () => {
     const freeToken = await createJWT(
       {
-        userId: "free-user-id",
-        email: "free@example.com",
-        tier: "free",
+        userId: 'free-user-id',
+        email: 'free@example.com',
+        tier: 'free',
       },
       TEST_ENV.JWT_SECRET
     );
 
-    const req = new Request("http://localhost/api/agent/chat", {
-      method: "POST",
+    const req = new Request('http://localhost/api/agent/chat', {
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${freeToken}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message: "Help me rotate my Stripe keys",
+        message: 'Help me rotate my Stripe keys',
       }),
     });
 
@@ -331,9 +334,9 @@ describe("Tier-based Access Control", () => {
   });
 });
 
-describe("Error Handling", () => {
-  it("should return 404 for non-existent secret", async () => {
-    const req = new Request("http://localhost/api/secrets/non-existent-id", {
+describe('Error Handling', () => {
+  it('should return 404 for non-existent secret', async () => {
+    const req = new Request('http://localhost/api/secrets/non-existent-id', {
       headers: {
         Authorization: `Bearer ${authToken}`,
       },
@@ -343,12 +346,12 @@ describe("Error Handling", () => {
     expect(res.status).toBe(404);
   });
 
-  it("should return 400 for invalid request body", async () => {
-    const req = new Request("http://localhost/api/secrets", {
-      method: "POST",
+  it('should return 400 for invalid request body', async () => {
+    const req = new Request('http://localhost/api/secrets', {
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${authToken}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         // Missing required fields
@@ -359,8 +362,8 @@ describe("Error Handling", () => {
     expect(res.status).toBe(400);
   });
 
-  it("should return standardized error format", async () => {
-    const req = new Request("http://localhost/api/secrets/non-existent", {
+  it('should return standardized error format', async () => {
+    const req = new Request('http://localhost/api/secrets/non-existent', {
       headers: {
         Authorization: `Bearer ${authToken}`,
       },
@@ -430,7 +433,7 @@ function createMockKV(): KVNamespace {
       const value = storage.get(key);
       if (!value) return null;
 
-      if (options === "json") {
+      if (options === 'json') {
         return JSON.parse(value);
       }
       return value;
@@ -442,7 +445,7 @@ function createMockKV(): KVNamespace {
       storage.delete(key);
     },
     async list(options?: any) {
-      return { keys: [], list_complete: true, cursor: "" };
+      return { keys: [], list_complete: true, cursor: '' };
     },
     async getWithMetadata(key: string, options?: any) {
       return { value: storage.get(key) || null, metadata: null };
@@ -459,16 +462,16 @@ function createMockVectorize(): Vectorize {
       };
     },
     async insert(vectors: any[]) {
-      return { ids: [], mutationId: "mock-id" };
+      return { ids: [], mutationId: 'mock-id' };
     },
     async upsert(vectors: any[]) {
-      return { ids: [], mutationId: "mock-id" };
+      return { ids: [], mutationId: 'mock-id' };
     },
     async getByIds(ids: string[]) {
       return [];
     },
     async deleteByIds(ids: string[]) {
-      return { deletedCount: 0, mutationId: "mock-id" };
+      return { deletedCount: 0, mutationId: 'mock-id' };
     },
   } as any;
 }
@@ -478,12 +481,9 @@ function createMockAgentNamespace(): any {
     get(id: any) {
       return {
         async fetch(request: Request) {
-          return new Response(
-            "data: {\"content\":\"Mock agent response\"}\n\n",
-            {
-              headers: { "Content-Type": "text/event-stream" },
-            }
-          );
+          return new Response('data: {"content":"Mock agent response"}\n\n', {
+            headers: { 'Content-Type': 'text/event-stream' },
+          });
         },
       };
     },

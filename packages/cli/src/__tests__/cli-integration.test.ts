@@ -16,11 +16,11 @@ describe('CLI Integration Tests', () => {
     // Generate encryption key
     const crypto = await import('crypto');
     encryptionKey = crypto.randomBytes(32).toString('base64');
-    
+
     // Set up test directory
     testDir = join(tmpdir(), `sf-cli-test-${Date.now()}`);
     cliPath = join(process.cwd(), 'dist', 'sf.js');
-    
+
     // Create test directory
     await execAsync(`mkdir -p ${testDir}`);
   });
@@ -51,7 +51,9 @@ describe('CLI Integration Tests', () => {
 
   it('should show error when not initialized', async () => {
     try {
-      const result = await execAsync(`cd ${testDir} && SECRETFORGE_ENCRYPTION_KEY="${encryptionKey}" node ${cliPath} list`);
+      const result = await execAsync(
+        `cd ${testDir} && SECRETFORGE_ENCRYPTION_KEY="${encryptionKey}" node ${cliPath} list`
+      );
       // If successful, should not get here as list should fail when not initialized
       // But if it does succeed with empty list, that's also acceptable
       expect(result.stdout).toBeTruthy();

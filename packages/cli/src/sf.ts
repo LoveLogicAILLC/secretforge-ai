@@ -9,10 +9,7 @@ import { exportCommand } from './commands/export.js';
 
 const program = new Command();
 
-program
-  .name('sf')
-  .description('SecretForge - AI-powered secret management CLI')
-  .version('1.0.0');
+program.name('sf').description('SecretForge - AI-powered secret management CLI').version('1.0.0');
 
 // sf init - Initialize project
 program

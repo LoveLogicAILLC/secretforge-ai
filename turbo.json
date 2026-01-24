@@ -5,12 +5,7 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
-      "env": [
-        "OPENAI_API_KEY",
-        "ANTHROPIC_API_KEY",
-        "ENCRYPTION_KEY",
-        "SECRETFORGE_API"
-      ]
+      "env": ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ENCRYPTION_KEY", "SECRETFORGE_API"]
     },
     "dev": {
       "cache": false,

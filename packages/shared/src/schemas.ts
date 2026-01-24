@@ -8,7 +8,13 @@ export const EnvironmentSchema = z.enum(['dev', 'staging', 'prod']);
 
 export const ComplianceFrameworkSchema = z.enum(['SOC2', 'GDPR', 'HIPAA', 'PCI_DSS']);
 
-export const SecretActionSchema = z.enum(['created', 'retrieved', 'rotated', 'deleted', 'validated']);
+export const SecretActionSchema = z.enum([
+  'created',
+  'retrieved',
+  'rotated',
+  'deleted',
+  'validated',
+]);
 
 export const CreateSecretSchema = z.object({
   service: z.string().min(1),
