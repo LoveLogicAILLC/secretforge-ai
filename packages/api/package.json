@@ -13,18 +13,18 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "hono": "^4.11.4",
     "agents": "^0.2.8",
+    "hono": "^4.11.4",
     "openai": "^4.0.0",
     "postgres": "^3.4.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.0.0",
-    "@types/node": "^20.0.0",
-    "typescript": "^5.3.0",
-    "wrangler": "^3.0.0",
+    "@types/node": "^20.19.30",
+    "@vitest/coverage-v8": "^1.0.0",
+    "typescript": "^5.9.3",
     "vitest": "^1.0.0",
-    "@vitest/coverage-v8": "^1.0.0"
+    "wrangler": "^3.0.0"
   }
 }

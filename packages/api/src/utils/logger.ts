@@ -318,7 +318,12 @@ export class HealthChecker {
    * Run all health checks
    */
   async check(): Promise<HealthStatus> {
-    const results = [];
+    const results: {
+      name: string;
+      status: "pass" | "fail";
+      message?: string;
+      duration?: number;
+    }[] = [];
     let allPassed = true;
 
     for (const [name, check] of this.checks) {

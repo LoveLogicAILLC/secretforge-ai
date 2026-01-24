@@ -364,7 +364,7 @@ async function createSecret(data: z.infer<typeof CreateSecretSchema>) {
     body: JSON.stringify(data),
   });
 
-  return response.json();
+  return response.json() as Promise<any>;
 }
 
 async function rotateSecret(secretId: string) {
@@ -377,14 +377,14 @@ async function searchDocumentation(service: string, query: string) {
   const response = await fetch(
     `http://localhost:8787/api/docs/search?service=${service}&q=${encodeURIComponent(query)}`
   );
-  return response.json();
+  return response.json() as Promise<any>;
 }
 
 async function validateSecurity(secretId: string, framework: string) {
   const response = await fetch(
     `http://localhost:8787/api/secrets/${secretId}/validate?framework=${framework}`
   );
-  return response.json();
+  return response.json() as Promise<any>;
 }
 
 // Start server

@@ -557,7 +557,7 @@ async function generateEmbedding(env: Env, text: string): Promise<number[]> {
     }),
   });
 
-  const data = await response.json<any>();
+  const data = await response.json() as any;
   return data.data[0].embedding;
 }
 
@@ -647,7 +647,7 @@ async function trackUsage(
 
 export class SecretAgent extends Agent<Env> {
   async onRequest(request: Request) {
-    const { message } = await request.json<any>();
+    const { message } = await request.json() as any;
 
     const client = new OpenAI({ apiKey: this.env.OPENAI_API_KEY });
 
@@ -695,7 +695,7 @@ export class SecretAgent extends Agent<Env> {
     `;
   }
 
-  onStateUpdate(state: any, source: string) {
+  onStateUpdate(state: unknown, source: any) {
     console.log("Agent state updated:", { state, source });
   }
 }
