@@ -1,16 +1,16 @@
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   ListPromptsRequestSchema,
   GetPromptRequestSchema,
-} from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod";
+} from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 
 interface SecretMetadata {
   service: string;
-  environment: "dev" | "staging" | "prod";
+  environment: 'dev' | 'staging' | 'prod';
   scopes: string[];
   created: string;
   lastRotated?: string;
@@ -25,8 +25,8 @@ interface MCPContext {
 
 const server = new Server(
   {
-    name: "secretforge-mcp",
-    version: "1.0.0",
+    name: 'secretforge-mcp',
+    version: '1.0.0',
   },
   {
     capabilities: {
@@ -40,7 +40,7 @@ const server = new Server(
 // Tool Schemas
 const CreateSecretSchema = z.object({
   service: z.string(),
-  environment: z.enum(["dev", "staging", "prod"]),
+  environment: z.enum(['dev', 'staging', 'prod']),
   scopes: z.array(z.string()).optional(),
 });
 
@@ -56,92 +56,92 @@ const RotateSecretSchema = z.object({
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
     {
-      name: "analyze_project",
-      description: "Analyzes a project directory to detect required API keys and services",
+      name: 'analyze_project',
+      description: 'Analyzes a project directory to detect required API keys and services',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
           projectPath: {
-            type: "string",
-            description: "Path to the project directory",
+            type: 'string',
+            description: 'Path to the project directory',
           },
         },
-        required: ["projectPath"],
+        required: ['projectPath'],
       },
     },
     {
-      name: "create_secret",
-      description: "Creates and provisions a new API key for a service",
+      name: 'create_secret',
+      description: 'Creates and provisions a new API key for a service',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
           service: {
-            type: "string",
+            type: 'string',
             description: "Service name (e.g., 'stripe', 'openai', 'aws')",
           },
           environment: {
-            type: "string",
-            enum: ["dev", "staging", "prod"],
-            description: "Environment for the key",
+            type: 'string',
+            enum: ['dev', 'staging', 'prod'],
+            description: 'Environment for the key',
           },
           scopes: {
-            type: "array",
-            items: { type: "string" },
-            description: "Permission scopes for the key",
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Permission scopes for the key',
           },
         },
-        required: ["service", "environment"],
+        required: ['service', 'environment'],
       },
     },
     {
-      name: "rotate_secret",
-      description: "Rotates an existing API key",
+      name: 'rotate_secret',
+      description: 'Rotates an existing API key',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
           secretId: {
-            type: "string",
-            description: "ID of the secret to rotate",
+            type: 'string',
+            description: 'ID of the secret to rotate',
           },
         },
-        required: ["secretId"],
+        required: ['secretId'],
       },
     },
     {
-      name: "search_documentation",
-      description: "Searches API documentation for a service",
+      name: 'search_documentation',
+      description: 'Searches API documentation for a service',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
           service: {
-            type: "string",
-            description: "Service name to search documentation for",
+            type: 'string',
+            description: 'Service name to search documentation for',
           },
           query: {
-            type: "string",
-            description: "Search query",
+            type: 'string',
+            description: 'Search query',
           },
         },
-        required: ["service", "query"],
+        required: ['service', 'query'],
       },
     },
     {
-      name: "validate_security",
-      description: "Validates security compliance for a secret",
+      name: 'validate_security',
+      description: 'Validates security compliance for a secret',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
           secretId: {
-            type: "string",
-            description: "ID of the secret to validate",
+            type: 'string',
+            description: 'ID of the secret to validate',
           },
           framework: {
-            type: "string",
-            enum: ["SOC2", "GDPR", "HIPAA", "PCI_DSS"],
-            description: "Compliance framework to validate against",
+            type: 'string',
+            enum: ['SOC2', 'GDPR', 'HIPAA', 'PCI_DSS'],
+            description: 'Compliance framework to validate against',
           },
         },
-        required: ["secretId", "framework"],
+        required: ['secretId', 'framework'],
       },
     },
   ],
@@ -153,65 +153,65 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     switch (name) {
-      case "analyze_project": {
+      case 'analyze_project': {
         const { projectPath } = AnalyzeProjectSchema.parse(args);
         const analysis = await analyzeProject(projectPath);
         return {
           content: [
             {
-              type: "text",
+              type: 'text',
               text: JSON.stringify(analysis, null, 2),
             },
           ],
         };
       }
 
-      case "create_secret": {
+      case 'create_secret': {
         const data = CreateSecretSchema.parse(args);
         const secret = await createSecret(data);
         return {
           content: [
             {
-              type: "text",
+              type: 'text',
               text: `Secret created successfully: ${secret.id}`,
             },
           ],
         };
       }
 
-      case "rotate_secret": {
+      case 'rotate_secret': {
         const { secretId } = RotateSecretSchema.parse(args);
         await rotateSecret(secretId);
         return {
           content: [
             {
-              type: "text",
+              type: 'text',
               text: `Secret ${secretId} rotated successfully`,
             },
           ],
         };
       }
 
-      case "search_documentation": {
+      case 'search_documentation': {
         const { service, query } = args as { service: string; query: string };
         const results = await searchDocumentation(service, query);
         return {
           content: [
             {
-              type: "text",
+              type: 'text',
               text: JSON.stringify(results, null, 2),
             },
           ],
         };
       }
 
-      case "validate_security": {
+      case 'validate_security': {
         const { secretId, framework } = args as { secretId: string; framework: string };
         const validation = await validateSecurity(secretId, framework);
         return {
           content: [
             {
-              type: "text",
+              type: 'text',
               text: JSON.stringify(validation, null, 2),
             },
           ],
@@ -225,8 +225,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return {
       content: [
         {
-          type: "text",
-          text: `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+          type: 'text',
+          text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         },
       ],
       isError: true,
@@ -238,28 +238,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 server.setRequestHandler(ListPromptsRequestSchema, async () => ({
   prompts: [
     {
-      name: "provision_api_key",
-      description: "Intelligent API key provisioning workflow",
+      name: 'provision_api_key',
+      description: 'Intelligent API key provisioning workflow',
       arguments: [
         {
-          name: "service",
-          description: "Service requiring API key",
+          name: 'service',
+          description: 'Service requiring API key',
           required: true,
         },
         {
-          name: "context",
-          description: "Project context",
+          name: 'context',
+          description: 'Project context',
           required: false,
         },
       ],
     },
     {
-      name: "security_audit",
-      description: "Comprehensive security audit for secrets",
+      name: 'security_audit',
+      description: 'Comprehensive security audit for secrets',
       arguments: [
         {
-          name: "scope",
-          description: "Audit scope (project, organization, service)",
+          name: 'scope',
+          description: 'Audit scope (project, organization, service)',
           required: true,
         },
       ],
@@ -272,26 +272,26 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
   switch (name) {
-    case "provision_api_key":
+    case 'provision_api_key':
       return {
         messages: [
           {
-            role: "user",
+            role: 'user',
             content: {
-              type: "text",
+              type: 'text',
               text: `Provision API key for ${args?.service}. Context: ${JSON.stringify(args?.context || {})}`,
             },
           },
         ],
       };
 
-    case "security_audit":
+    case 'security_audit':
       return {
         messages: [
           {
-            role: "user",
+            role: 'user',
             content: {
-              type: "text",
+              type: 'text',
               text: `Perform security audit for scope: ${args?.scope}`,
             },
           },
@@ -305,14 +305,14 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
 
 // Helper functions
 async function analyzeProject(projectPath: string): Promise<MCPContext> {
-  const fs = await import("fs/promises");
-  const path = await import("path");
+  const fs = await import('fs/promises');
+  const path = await import('path');
 
-  const packageJsonPath = path.join(projectPath, "package.json");
+  const packageJsonPath = path.join(projectPath, 'package.json');
   let dependencies = {};
 
   try {
-    const packageJson = JSON.parse(await fs.readFile(packageJsonPath, "utf-8"));
+    const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf-8'));
     dependencies = { ...packageJson.dependencies, ...packageJson.devDependencies };
   } catch {}
 
@@ -329,11 +329,11 @@ async function analyzeProject(projectPath: string): Promise<MCPContext> {
 
 function detectServices(dependencies: Record<string, string>): string[] {
   const serviceMap: Record<string, string[]> = {
-    stripe: ["stripe", "@stripe/stripe-js"],
-    openai: ["openai", "@openai/api"],
-    aws: ["aws-sdk", "@aws-sdk/client-s3"],
-    supabase: ["@supabase/supabase-js"],
-    anthropic: ["@anthropic-ai/sdk"],
+    stripe: ['stripe', '@stripe/stripe-js'],
+    openai: ['openai', '@openai/api'],
+    aws: ['aws-sdk', '@aws-sdk/client-s3'],
+    supabase: ['@supabase/supabase-js'],
+    anthropic: ['@anthropic-ai/sdk'],
   };
 
   const detected: string[] = [];
@@ -347,10 +347,8 @@ function detectServices(dependencies: Record<string, string>): string[] {
 
 async function getGitRemote(projectPath: string): Promise<string | undefined> {
   try {
-    const { execSync } = await import("child_process");
-    return execSync("git remote get-url origin", { cwd: projectPath })
-      .toString()
-      .trim();
+    const { execSync } = await import('child_process');
+    return execSync('git remote get-url origin', { cwd: projectPath }).toString().trim();
   } catch {
     return undefined;
   }
@@ -358,9 +356,9 @@ async function getGitRemote(projectPath: string): Promise<string | undefined> {
 
 async function createSecret(data: z.infer<typeof CreateSecretSchema>) {
   // Integrate with Cloudflare Workers API
-  const response = await fetch("http://localhost:8787/api/secrets", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const response = await fetch('http://localhost:8787/api/secrets', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
 
@@ -369,7 +367,7 @@ async function createSecret(data: z.infer<typeof CreateSecretSchema>) {
 
 async function rotateSecret(secretId: string) {
   await fetch(`http://localhost:8787/api/secrets/${secretId}/rotate`, {
-    method: "POST",
+    method: 'POST',
   });
 }
 
@@ -391,10 +389,10 @@ async function validateSecurity(secretId: string, framework: string) {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("SecretForge MCP Server running on stdio");
+  console.error('SecretForge MCP Server running on stdio');
 }
 
 main().catch((error) => {
-  console.error("Server error:", error);
+  console.error('Server error:', error);
   process.exit(1);
 });

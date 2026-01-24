@@ -18,21 +18,26 @@ Edge-native API built with Hono framework, providing endpoints for secret manage
 ## API Endpoints
 
 ### Health
+
 - `GET /health` - Health check
 
 ### Analysis
+
 - `POST /api/analyze` - Analyze project dependencies
 
 ### Secrets
+
 - `POST /api/secrets` - Create secret
 - `GET /api/secrets/:id` - Retrieve secret
 - `POST /api/secrets/:id/rotate` - Rotate secret
 - `GET /api/secrets/:id/validate` - Validate compliance
 
 ### Documentation
+
 - `GET /api/docs/search` - Vector search API docs
 
 ### AI Agent
+
 - `POST /api/agent/chat` - Chat with AI agent (SSE stream)
 
 ## Development
@@ -54,6 +59,7 @@ pnpm deploy
 ## Configuration
 
 See `wrangler.toml` for Cloudflare bindings:
+
 - D1 database (metadata)
 - KV namespace (encrypted secrets)
 - Vectorize index (documentation embeddings)
@@ -63,6 +69,7 @@ See `wrangler.toml` for Cloudflare bindings:
 ## Database Schema
 
 Run migrations:
+
 ```bash
 pnpm wrangler d1 execute secretforge-db --file=schema.sql
 ```
@@ -70,6 +77,7 @@ pnpm wrangler d1 execute secretforge-db --file=schema.sql
 ## Environment Variables
 
 Required secrets (set via `wrangler secret put`):
+
 - `OPENAI_API_KEY`
 - `ANTHROPIC_API_KEY`
 - `ENCRYPTION_KEY`

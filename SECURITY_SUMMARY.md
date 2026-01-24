@@ -29,7 +29,7 @@
 3. **Shell Command Injection (3 instances)**
    - **Location:** `cli-integration.test.ts` (test file only)
    - **Context:** Using `process.cwd()` in test shell commands
-   - **Reason for Acceptance:** 
+   - **Reason for Acceptance:**
      - Only in test code, not production
      - `cliPath` is derived from `process.cwd()` which is controlled
      - Tests run in isolated environment
@@ -38,6 +38,7 @@
 ### Security Features Implemented
 
 #### 1. Encryption
+
 - **Algorithm:** AES-256-GCM (NIST approved)
 - **Key Size:** 256 bits (32 bytes)
 - **Mode:** Galois/Counter Mode with built-in authentication
@@ -45,30 +46,35 @@
 - **Auth Tag:** 128-bit authentication tag for integrity verification
 
 **Security Properties:**
+
 - Confidentiality: ✅ AES-256 encryption
 - Integrity: ✅ GCM authentication tag
 - Freshness: ✅ Random IV per encryption
 - No key reuse: ✅ Different ciphertext for same plaintext
 
 #### 2. Key Management
+
 - **Storage:** Environment variable (`SECRETFORGE_ENCRYPTION_KEY`)
 - **Format:** Base64-encoded 32-byte key
 - **Validation:** Key length checked on provider initialization
 - **Separation:** Keys never stored in database or config files
 
 **Best Practices:**
+
 - ✅ Keys stored outside application
 - ✅ Keys not logged or displayed
 - ✅ Key rotation supported (change env var)
 - ✅ Multi-environment support (different keys per env)
 
 #### 3. Data Protection
+
 - **At Rest:** All secrets encrypted in SQLite database
 - **In Transit:** N/A (local-first, no network)
 - **In Memory:** Decrypted only when needed, not cached
 - **In Logs:** Secret values never logged
 
 **Database Security:**
+
 - ✅ Encrypted values only in database
 - ✅ File-level permissions (OS-controlled)
 - ✅ UNIQUE constraint prevents duplicates
@@ -77,6 +83,7 @@
 #### 4. Input Validation & Sanitization
 
 **Export Command:**
+
 ```typescript
 // YAML format - escape backslashes and quotes
 const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
@@ -89,18 +96,21 @@ if (needsQuotes) {
 ```
 
 **Inject Command:**
+
 ```typescript
 // Same escaping for .env file generation
 const escaped = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 ```
 
 **Protection Against:**
+
 - ✅ Shell injection via crafted secret values
 - ✅ Environment variable corruption
 - ✅ YAML parsing errors
 - ✅ Quote escaping attacks
 
 #### 5. Secure ID Generation
+
 ```typescript
 private generateId(): string {
   const crypto = require('crypto');
@@ -109,6 +119,7 @@ private generateId(): string {
 ```
 
 **Properties:**
+
 - Uses Node.js crypto module (cryptographically secure)
 - UUID v4 format (122 bits of randomness)
 - Unpredictable and collision-resistant
@@ -159,18 +170,21 @@ private generateId(): string {
 ### Compliance Considerations
 
 #### SOC 2 Type II
+
 - ✅ Encryption at rest
 - ✅ Access logging (timestamps)
 - ⚠️ Access control (future phase)
 - ⚠️ Audit trails (future phase)
 
 #### GDPR
+
 - ✅ Data minimization
 - ✅ Encryption
 - ✅ Right to delete (delete command)
 - ⚠️ Access logs (future phase)
 
 #### HIPAA
+
 - ✅ Encryption at rest
 - ✅ Unique identifiers
 - ⚠️ Audit controls (future phase)
@@ -179,6 +193,7 @@ private generateId(): string {
 ### Recommendations
 
 #### For Users
+
 1. **Secure Key Storage**
    - Use password managers (1Password, LastPass)
    - Or cloud secret managers (AWS Secrets Manager, GCP Secret Manager)
@@ -200,6 +215,7 @@ private generateId(): string {
    - Enable full-disk encryption
 
 #### For Developers
+
 1. **Testing**
    - Run tests before commits
    - Verify encryption/decryption roundtrips
@@ -233,18 +249,21 @@ private generateId(): string {
 ### Future Security Enhancements
 
 **Phase 2:**
+
 - [ ] KMS integration (AWS KMS, Google Cloud KMS, Azure Key Vault)
 - [ ] Hardware security module (HSM) support
 - [ ] Key rotation automation
 - [ ] Audit logging with tamper-proof storage
 
 **Phase 3:**
+
 - [ ] Multi-party encryption (threshold cryptography)
 - [ ] Zero-knowledge architecture
 - [ ] End-to-end encryption for team collaboration
 - [ ] Compliance automation (SOC 2, HIPAA, GDPR)
 
 **Phase 4:**
+
 - [ ] Runtime secret detection
 - [ ] Git hooks for leak prevention
 - [ ] Secret scanning in CI/CD
@@ -258,11 +277,12 @@ SecretForge Phase 1 has been implemented with security as a primary concern:
 ✅ **All Medium Issues Resolved**  
 ✅ **Industry-Standard Encryption (AES-256-GCM)**  
 ✅ **Cryptographically Secure Operations**  
-✅ **Comprehensive Input Validation**  
+✅ **Comprehensive Input Validation**
 
 The implementation follows security best practices and is ready for production use with proper operational security (key management, backups, access control).
 
 **Security Rating:** ⭐⭐⭐⭐⭐ (5/5)
+
 - Encryption: ⭐⭐⭐⭐⭐
 - Key Management: ⭐⭐⭐⭐ (4/5, KMS support planned)
 - Data Protection: ⭐⭐⭐⭐⭐

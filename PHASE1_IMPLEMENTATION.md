@@ -41,6 +41,7 @@ packages/cli/
 ### Database Schema
 
 **Secrets Table:**
+
 ```sql
 CREATE TABLE secrets (
   id TEXT PRIMARY KEY,
@@ -65,6 +66,7 @@ CREATE INDEX idx_name ON secrets(name);
 **Location:** `src/crypto/CryptoProvider.ts`
 
 **Interface:**
+
 ```typescript
 interface CryptoProvider {
   encrypt(plaintext: string): Promise<string>;
@@ -73,6 +75,7 @@ interface CryptoProvider {
 ```
 
 **Implementation:** `DefaultCryptoProvider`
+
 - **Algorithm:** AES-256-GCM
 - **Key Source:** `SECRETFORGE_ENCRYPTION_KEY` environment variable
 - **IV:** Random 12-byte initialization vector per encryption
@@ -80,6 +83,7 @@ interface CryptoProvider {
 - **Encoding:** Base64 for encrypted output
 
 **Key Features:**
+
 - Deterministic decryption with authentication
 - Different ciphertexts for same plaintext (random IV)
 - Protection against tampering (auth tag)
@@ -90,6 +94,7 @@ interface CryptoProvider {
 **Location:** `src/storage/SecretStorage.ts`
 
 **Interface:**
+
 ```typescript
 interface SecretStorage {
   addSecret(options: AddSecretOptions): Promise<Secret>;
@@ -103,6 +108,7 @@ interface SecretStorage {
 ```
 
 **Implementation:** `SQLiteSecretStorage`
+
 - Uses better-sqlite3 for synchronous SQLite operations
 - Automatic encryption on write
 - Supports filtering by project, environment, and tags
@@ -113,6 +119,7 @@ interface SecretStorage {
 **Location:** `src/cli/ConfigManager.ts`
 
 Manages `.secretforge.json` configuration:
+
 ```json
 {
   "version": "1.0.0",
@@ -127,32 +134,42 @@ Manages `.secretforge.json` configuration:
 All commands use the `sf` binary.
 
 #### `sf init`
+
 Initializes SecretForge in current project.
+
 - Creates `.secretforge.json`
 - Sets up SQLite database
 - Generates encryption key if needed
 
 #### `sf add [NAME]`
+
 Adds a new secret interactively.
+
 - Options: `--env`, `--tags`
 - Encrypts value before storage
 - Supports updating existing secrets
 
 #### `sf list`
+
 Lists secrets without exposing values.
+
 - Options: `--env`, `--project`, `--tags`
 - Groups by environment
 - Shows metadata (ID, tags, timestamps)
 
 #### `sf inject --env <environment>`
+
 Injects secrets into environment files.
+
 - Options: `--file` (default: `.env.<environment>`)
 - Decrypts secrets for target environment
 - Merges with existing variables
 - Escapes special characters
 
 #### `sf export`
+
 Exports secrets in various formats.
+
 - Options: `--env`, `--format` (env, json, yaml)
 - Decrypts secrets for output
 - Suitable for CI/CD pipelines
@@ -160,18 +177,21 @@ Exports secrets in various formats.
 ## Security Features
 
 ### Encryption
+
 - **Algorithm:** AES-256-GCM (industry standard)
 - **Key Length:** 256 bits (32 bytes)
 - **IV:** Random 12-byte per encryption
 - **Authentication:** Built-in with GCM mode
 
 ### Key Management
+
 - Encryption key stored in environment variable
 - Not stored in configuration or database
 - 32-byte base64-encoded format
 - Generate with: `openssl rand -base64 32`
 
 ### Data Protection
+
 - Secrets encrypted at rest
 - Values never logged or displayed
 - Unique constraint prevents duplicates
@@ -182,12 +202,14 @@ Exports secrets in various formats.
 **Total:** 38 tests across 4 test files
 
 ### Test Coverage
+
 - **Crypto Tests (11):** Encryption, decryption, key validation, edge cases
 - **Storage Tests (20):** CRUD operations, filtering, constraints
 - **Integration Tests (3):** CLI help, version, error handling
 - **Service Detection (4):** Dependency analysis
 
 ### Running Tests
+
 ```bash
 pnpm test              # Run all tests
 pnpm test:watch       # Watch mode
@@ -197,6 +219,7 @@ pnpm test:coverage    # Coverage report
 ## Usage Examples
 
 ### Initial Setup
+
 ```bash
 # Generate encryption key
 export SECRETFORGE_ENCRYPTION_KEY=$(openssl rand -base64 32)
@@ -208,6 +231,7 @@ sf init
 ```
 
 ### Adding Secrets
+
 ```bash
 # Interactive mode
 sf add DATABASE_URL
@@ -217,6 +241,7 @@ sf add STRIPE_KEY --env prod --tags payment,api
 ```
 
 ### Listing Secrets
+
 ```bash
 # All secrets
 sf list
@@ -229,6 +254,7 @@ sf list --tags api
 ```
 
 ### Deployment
+
 ```bash
 # Development environment
 sf inject --env dev
@@ -243,17 +269,21 @@ sf export --env prod --format json > secrets.json
 ## Configuration Files
 
 ### `.secretforge.json`
+
 Project configuration (commit to git).
 
 ### `.env.<environment>`
+
 Generated environment files (add to .gitignore).
 
 ### `~/.secretforge/<project>.db`
+
 SQLite database with encrypted secrets (backup regularly).
 
 ## Migration Path
 
 ### From Existing .env Files
+
 ```bash
 # 1. Initialize SecretForge
 sf init
@@ -265,6 +295,7 @@ done < .env
 ```
 
 ### To Cloud Services
+
 ```bash
 # Export to JSON for import to cloud
 sf export --env prod --format json > cloud-import.json
@@ -305,18 +336,21 @@ sf export --env prod --format json > cloud-import.json
 ## Technical Decisions
 
 ### Why SQLite?
+
 - Local-first approach (no cloud dependency)
 - Simple deployment (single file)
 - ACID compliance
 - Excellent performance for this use case
 
 ### Why AES-256-GCM?
+
 - Industry standard
 - Authentication built-in (no need for separate HMAC)
 - Fast native implementation in Node.js
 - Resistant to known attacks
 
 ### Why Local Storage?
+
 - Zero-trust model (data stays on developer machine)
 - No API keys or cloud accounts needed
 - Works offline
@@ -326,20 +360,25 @@ sf export --env prod --format json > cloud-import.json
 ## Troubleshooting
 
 ### "Encryption key not provided"
+
 Set the environment variable:
+
 ```bash
 export SECRETFORGE_ENCRYPTION_KEY="your-base64-key"
 ```
 
 ### "SecretForge not initialized"
+
 Run `sf init` in your project directory.
 
 ### "Cannot decrypt secret"
+
 - Wrong encryption key
 - Corrupted database
 - Restore from backup
 
 ### Tests Failing
+
 ```bash
 # Clean rebuild
 pnpm clean
@@ -358,6 +397,7 @@ pnpm test
 ## Dependencies
 
 ### Production
+
 - `commander` - CLI framework
 - `inquirer` - Interactive prompts
 - `chalk` - Terminal colors
@@ -365,6 +405,7 @@ pnpm test
 - `better-sqlite3` - SQLite driver
 
 ### Development
+
 - `typescript` - Type safety
 - `vitest` - Testing framework
 - `tsx` - TypeScript execution

@@ -1,5 +1,5 @@
-import { Context } from "hono";
-import { HTTPException } from "hono/http-exception";
+import { Context } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 
 export interface ErrorResponse {
   error: {
@@ -20,7 +20,7 @@ export async function errorHandler(err: Error, c: Context): Promise<Response> {
   const timestamp = new Date().toISOString();
 
   // Log error for debugging
-  console.error("Error:", {
+  console.error('Error:', {
     requestId,
     timestamp,
     error: err.message,
@@ -44,11 +44,11 @@ export async function errorHandler(err: Error, c: Context): Promise<Response> {
   }
 
   // Handle validation errors
-  if (err.name === "ZodError") {
+  if (err.name === 'ZodError') {
     const response: ErrorResponse = {
       error: {
-        message: "Validation failed",
-        code: "VALIDATION_ERROR",
+        message: 'Validation failed',
+        code: 'VALIDATION_ERROR',
         details: (err as any).errors,
         requestId,
         timestamp,
@@ -59,11 +59,11 @@ export async function errorHandler(err: Error, c: Context): Promise<Response> {
   }
 
   // Handle database errors
-  if (err.message.includes("D1_ERROR") || err.message.includes("database")) {
+  if (err.message.includes('D1_ERROR') || err.message.includes('database')) {
     const response: ErrorResponse = {
       error: {
-        message: "Database operation failed",
-        code: "DATABASE_ERROR",
+        message: 'Database operation failed',
+        code: 'DATABASE_ERROR',
         requestId,
         timestamp,
       },
@@ -73,11 +73,11 @@ export async function errorHandler(err: Error, c: Context): Promise<Response> {
   }
 
   // Handle encryption errors
-  if (err.message.includes("encrypt") || err.message.includes("decrypt")) {
+  if (err.message.includes('encrypt') || err.message.includes('decrypt')) {
     const response: ErrorResponse = {
       error: {
-        message: "Encryption operation failed",
-        code: "ENCRYPTION_ERROR",
+        message: 'Encryption operation failed',
+        code: 'ENCRYPTION_ERROR',
         requestId,
         timestamp,
       },
@@ -87,11 +87,11 @@ export async function errorHandler(err: Error, c: Context): Promise<Response> {
   }
 
   // Handle external API errors
-  if (err.message.includes("OpenAI") || err.message.includes("API")) {
+  if (err.message.includes('OpenAI') || err.message.includes('API')) {
     const response: ErrorResponse = {
       error: {
-        message: "External service temporarily unavailable",
-        code: "EXTERNAL_SERVICE_ERROR",
+        message: 'External service temporarily unavailable',
+        code: 'EXTERNAL_SERVICE_ERROR',
         requestId,
         timestamp,
       },
@@ -103,8 +103,8 @@ export async function errorHandler(err: Error, c: Context): Promise<Response> {
   // Default internal server error
   const response: ErrorResponse = {
     error: {
-      message: "An unexpected error occurred",
-      code: "INTERNAL_SERVER_ERROR",
+      message: 'An unexpected error occurred',
+      code: 'INTERNAL_SERVER_ERROR',
       requestId,
       timestamp,
     },
@@ -118,17 +118,17 @@ export async function errorHandler(err: Error, c: Context): Promise<Response> {
  */
 function getErrorCode(status: number): string {
   const codes: Record<number, string> = {
-    400: "BAD_REQUEST",
-    401: "UNAUTHORIZED",
-    403: "FORBIDDEN",
-    404: "NOT_FOUND",
-    409: "CONFLICT",
-    429: "RATE_LIMIT_EXCEEDED",
-    500: "INTERNAL_SERVER_ERROR",
-    503: "SERVICE_UNAVAILABLE",
+    400: 'BAD_REQUEST',
+    401: 'UNAUTHORIZED',
+    403: 'FORBIDDEN',
+    404: 'NOT_FOUND',
+    409: 'CONFLICT',
+    429: 'RATE_LIMIT_EXCEEDED',
+    500: 'INTERNAL_SERVER_ERROR',
+    503: 'SERVICE_UNAVAILABLE',
   };
 
-  return codes[status] || "UNKNOWN_ERROR";
+  return codes[status] || 'UNKNOWN_ERROR';
 }
 
 /**
@@ -140,13 +140,13 @@ export function validateRequest(schema: any) {
     try {
       const body = await c.req.json();
       const validated = schema.parse(body);
-      c.set("validatedData", validated);
+      c.set('validatedData', validated);
       await next();
     } catch (error) {
-      if (error instanceof Error && error.name === "ZodError") {
+      if (error instanceof Error && error.name === 'ZodError') {
         throw error;
       }
-      throw new HTTPException(400, { message: "Invalid request body" });
+      throw new HTTPException(400, { message: 'Invalid request body' });
     }
   };
 }
@@ -159,22 +159,22 @@ export async function requestLogger(c: Context, next: any) {
   const start = Date.now();
   const requestId = crypto.randomUUID();
 
-  c.set("requestId", requestId);
+  c.set('requestId', requestId);
 
-  console.log("Request:", {
+  console.log('Request:', {
     requestId,
     method: c.req.method,
     path: c.req.path,
     query: c.req.query(),
-    ip: c.req.header("CF-Connecting-IP") || c.req.header("X-Forwarded-For"),
-    userAgent: c.req.header("User-Agent"),
+    ip: c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For'),
+    userAgent: c.req.header('User-Agent'),
   });
 
   await next();
 
   const duration = Date.now() - start;
 
-  console.log("Response:", {
+  console.log('Response:', {
     requestId,
     status: c.res.status,
     duration: `${duration}ms`,
@@ -188,13 +188,13 @@ export async function requestLogger(c: Context, next: any) {
 export async function securityHeaders(c: Context, next: any) {
   await next();
 
-  c.header("X-Content-Type-Options", "nosniff");
-  c.header("X-Frame-Options", "DENY");
-  c.header("X-XSS-Protection", "1; mode=block");
-  c.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-  c.header("Referrer-Policy", "strict-origin-when-cross-origin");
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('X-Frame-Options', 'DENY');
+  c.header('X-XSS-Protection', '1; mode=block');
+  c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
   c.header(
-    "Content-Security-Policy",
+    'Content-Security-Policy',
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline';"
   );
 }
@@ -204,28 +204,28 @@ export async function securityHeaders(c: Context, next: any) {
  */
 export function corsMiddleware() {
   return async (c: Context, next: any) => {
-    const origin = c.req.header("Origin");
+    const origin = c.req.header('Origin');
     const allowedOrigins = [
-      "http://localhost:3000",
-      "http://localhost:5173",
-      "https://secretforge.ai",
-      "https://app.secretforge.ai",
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'https://secretforge.ai',
+      'https://app.secretforge.ai',
     ];
 
     if (origin && allowedOrigins.includes(origin)) {
-      c.header("Access-Control-Allow-Origin", origin);
-      c.header("Access-Control-Allow-Credentials", "true");
+      c.header('Access-Control-Allow-Origin', origin);
+      c.header('Access-Control-Allow-Credentials', 'true');
     }
 
-    c.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     c.header(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, X-API-Key, X-Request-ID"
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, X-API-Key, X-Request-ID'
     );
-    c.header("Access-Control-Max-Age", "86400");
+    c.header('Access-Control-Max-Age', '86400');
 
-    if (c.req.method === "OPTIONS") {
-      return c.text("", 204);
+    if (c.req.method === 'OPTIONS') {
+      return c.text('', 204);
     }
 
     await next();
@@ -238,9 +238,9 @@ export function corsMiddleware() {
 export function notFoundHandler(c: Context) {
   const response: ErrorResponse = {
     error: {
-      message: "Endpoint not found",
-      code: "NOT_FOUND",
-      requestId: c.get("requestId") || crypto.randomUUID(),
+      message: 'Endpoint not found',
+      code: 'NOT_FOUND',
+      requestId: c.get('requestId') || crypto.randomUUID(),
       timestamp: new Date().toISOString(),
     },
   };
@@ -255,7 +255,7 @@ export function timeout(ms: number = 30000) {
   return async (c: Context, next: any) => {
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => {
-        reject(new HTTPException(408, { message: "Request timeout" }));
+        reject(new HTTPException(408, { message: 'Request timeout' }));
       }, ms);
     });
 
@@ -272,7 +272,7 @@ export function timeout(ms: number = 30000) {
  */
 export function bodyLimit(maxBytes: number = 1024 * 1024) {
   return async (c: Context, next: any) => {
-    const contentLength = c.req.header("Content-Length");
+    const contentLength = c.req.header('Content-Length');
 
     if (contentLength && parseInt(contentLength) > maxBytes) {
       throw new HTTPException(413, {

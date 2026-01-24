@@ -30,58 +30,58 @@ export interface APICall {
  */
 const SCOPE_MAPPINGS: Record<string, Record<string, string[]>> = {
   stripe: {
-    "customers.create": ["customers:write"],
-    "customers.retrieve": ["customers:read"],
-    "customers.list": ["customers:read"],
-    "customers.update": ["customers:write"],
-    "customers.delete": ["customers:write"],
-    "charges.create": ["charges:write"],
-    "charges.retrieve": ["charges:read"],
-    "charges.list": ["charges:read"],
-    "paymentIntents.create": ["payment_intents:write"],
-    "paymentIntents.retrieve": ["payment_intents:read"],
-    "paymentIntents.confirm": ["payment_intents:write"],
-    "subscriptions.create": ["subscriptions:write"],
-    "subscriptions.retrieve": ["subscriptions:read"],
-    "subscriptions.list": ["subscriptions:read"],
-    "subscriptions.update": ["subscriptions:write"],
-    "subscriptions.cancel": ["subscriptions:write"],
+    'customers.create': ['customers:write'],
+    'customers.retrieve': ['customers:read'],
+    'customers.list': ['customers:read'],
+    'customers.update': ['customers:write'],
+    'customers.delete': ['customers:write'],
+    'charges.create': ['charges:write'],
+    'charges.retrieve': ['charges:read'],
+    'charges.list': ['charges:read'],
+    'paymentIntents.create': ['payment_intents:write'],
+    'paymentIntents.retrieve': ['payment_intents:read'],
+    'paymentIntents.confirm': ['payment_intents:write'],
+    'subscriptions.create': ['subscriptions:write'],
+    'subscriptions.retrieve': ['subscriptions:read'],
+    'subscriptions.list': ['subscriptions:read'],
+    'subscriptions.update': ['subscriptions:write'],
+    'subscriptions.cancel': ['subscriptions:write'],
   },
   aws: {
-    "s3.putObject": ["s3:PutObject"],
-    "s3.getObject": ["s3:GetObject"],
-    "s3.listObjects": ["s3:ListBucket"],
-    "s3.deleteObject": ["s3:DeleteObject"],
-    "lambda.invoke": ["lambda:InvokeFunction"],
-    "lambda.createFunction": ["lambda:CreateFunction"],
-    "dynamodb.putItem": ["dynamodb:PutItem"],
-    "dynamodb.getItem": ["dynamodb:GetItem"],
-    "dynamodb.scan": ["dynamodb:Scan"],
-    "dynamodb.query": ["dynamodb:Query"],
-    "sns.publish": ["sns:Publish"],
-    "sqs.sendMessage": ["sqs:SendMessage"],
+    's3.putObject': ['s3:PutObject'],
+    's3.getObject': ['s3:GetObject'],
+    's3.listObjects': ['s3:ListBucket'],
+    's3.deleteObject': ['s3:DeleteObject'],
+    'lambda.invoke': ['lambda:InvokeFunction'],
+    'lambda.createFunction': ['lambda:CreateFunction'],
+    'dynamodb.putItem': ['dynamodb:PutItem'],
+    'dynamodb.getItem': ['dynamodb:GetItem'],
+    'dynamodb.scan': ['dynamodb:Scan'],
+    'dynamodb.query': ['dynamodb:Query'],
+    'sns.publish': ['sns:Publish'],
+    'sqs.sendMessage': ['sqs:SendMessage'],
   },
   openai: {
-    "chat.completions.create": ["chat.completions:write"],
-    "embeddings.create": ["embeddings:write"],
-    "images.generate": ["images:write"],
-    "audio.transcriptions.create": ["audio:write"],
-    "files.create": ["files:write"],
-    "files.retrieve": ["files:read"],
-    "fine_tuning.jobs.create": ["fine_tuning:write"],
+    'chat.completions.create': ['chat.completions:write'],
+    'embeddings.create': ['embeddings:write'],
+    'images.generate': ['images:write'],
+    'audio.transcriptions.create': ['audio:write'],
+    'files.create': ['files:write'],
+    'files.retrieve': ['files:read'],
+    'fine_tuning.jobs.create': ['fine_tuning:write'],
   },
   twilio: {
-    "messages.create": ["messages:write"],
-    "messages.list": ["messages:read"],
-    "calls.create": ["calls:write"],
-    "calls.list": ["calls:read"],
-    "verify.services.create": ["verify:write"],
+    'messages.create': ['messages:write'],
+    'messages.list': ['messages:read'],
+    'calls.create': ['calls:write'],
+    'calls.list': ['calls:read'],
+    'verify.services.create': ['verify:write'],
   },
   sendgrid: {
-    "send": ["mail:send"],
-    "templates.create": ["templates:write"],
-    "templates.list": ["templates:read"],
-    "lists.create": ["marketing:write"],
+    send: ['mail:send'],
+    'templates.create': ['templates:write'],
+    'templates.list': ['templates:read'],
+    'lists.create': ['marketing:write'],
   },
 };
 
@@ -115,7 +115,7 @@ export function analyzeGoCode(code: string, service: string): ScopeAnalysisResul
  */
 function extractJavaScriptAPICalls(code: string, service: string): APICall[] {
   const calls: APICall[] = [];
-  const lines = code.split("\n");
+  const lines = code.split('\n');
 
   const servicePatterns = getServicePatterns(service);
 
@@ -125,8 +125,8 @@ function extractJavaScriptAPICalls(code: string, service: string): APICall[] {
     for (const pattern of servicePatterns) {
       const matches = line.matchAll(pattern.regex);
       for (const match of matches) {
-        const method = match[1] || match[2] || "unknown";
-        const endpoint = pattern.name + "." + method;
+        const method = match[1] || match[2] || 'unknown';
+        const endpoint = pattern.name + '.' + method;
         const scopes = SCOPE_MAPPINGS[service]?.[endpoint] || [];
 
         if (scopes.length > 0) {
@@ -136,7 +136,7 @@ function extractJavaScriptAPICalls(code: string, service: string): APICall[] {
             endpoint,
             requiredScope: scopes[0],
             location: {
-              file: "analysis",
+              file: 'analysis',
               line: i + 1,
             },
           });
@@ -153,22 +153,25 @@ function extractJavaScriptAPICalls(code: string, service: string): APICall[] {
  */
 function extractPythonAPICalls(code: string, service: string): APICall[] {
   const calls: APICall[] = [];
-  const lines = code.split("\n");
+  const lines = code.split('\n');
 
   // Python-specific patterns
   const patterns: { name: string; regex: RegExp }[] = [];
 
-  if (service === "stripe") {
+  if (service === 'stripe') {
     patterns.push(
-      { name: "customers", regex: /stripe\.Customer\.(create|retrieve|list|update|delete)/g },
-      { name: "charges", regex: /stripe\.Charge\.(create|retrieve|list)/g },
-      { name: "subscriptions", regex: /stripe\.Subscription\.(create|retrieve|list|update|cancel)/g }
+      { name: 'customers', regex: /stripe\.Customer\.(create|retrieve|list|update|delete)/g },
+      { name: 'charges', regex: /stripe\.Charge\.(create|retrieve|list)/g },
+      {
+        name: 'subscriptions',
+        regex: /stripe\.Subscription\.(create|retrieve|list|update|cancel)/g,
+      }
     );
-  } else if (service === "openai") {
+  } else if (service === 'openai') {
     patterns.push(
-      { name: "chat.completions", regex: /client\.chat\.completions\.create/g },
-      { name: "embeddings", regex: /client\.embeddings\.create/g },
-      { name: "images", regex: /client\.images\.generate/g }
+      { name: 'chat.completions', regex: /client\.chat\.completions\.create/g },
+      { name: 'embeddings', regex: /client\.embeddings\.create/g },
+      { name: 'images', regex: /client\.images\.generate/g }
     );
   }
 
@@ -178,8 +181,8 @@ function extractPythonAPICalls(code: string, service: string): APICall[] {
     for (const pattern of patterns) {
       const matches = line.matchAll(pattern.regex);
       for (const match of matches) {
-        const method = match[1] || "create";
-        const endpoint = pattern.name + "." + method;
+        const method = match[1] || 'create';
+        const endpoint = pattern.name + '.' + method;
         const scopes = SCOPE_MAPPINGS[service]?.[endpoint] || [];
 
         if (scopes.length > 0) {
@@ -189,7 +192,7 @@ function extractPythonAPICalls(code: string, service: string): APICall[] {
             endpoint,
             requiredScope: scopes[0],
             location: {
-              file: "analysis",
+              file: 'analysis',
               line: i + 1,
             },
           });
@@ -206,20 +209,20 @@ function extractPythonAPICalls(code: string, service: string): APICall[] {
  */
 function extractGoAPICalls(code: string, service: string): APICall[] {
   const calls: APICall[] = [];
-  const lines = code.split("\n");
+  const lines = code.split('\n');
 
   // Go-specific patterns
   const patterns: { name: string; regex: RegExp }[] = [];
 
-  if (service === "stripe") {
+  if (service === 'stripe') {
     patterns.push(
-      { name: "customers", regex: /customer\.(New|Get|List|Update|Del)/g },
-      { name: "charges", regex: /charge\.(New|Get|List)/g }
+      { name: 'customers', regex: /customer\.(New|Get|List|Update|Del)/g },
+      { name: 'charges', regex: /charge\.(New|Get|List)/g }
     );
-  } else if (service === "aws") {
+  } else if (service === 'aws') {
     patterns.push(
-      { name: "s3", regex: /s3Client\.(PutObject|GetObject|ListObjects|DeleteObject)/g },
-      { name: "lambda", regex: /lambdaClient\.Invoke/g }
+      { name: 's3', regex: /s3Client\.(PutObject|GetObject|ListObjects|DeleteObject)/g },
+      { name: 'lambda', regex: /lambdaClient\.Invoke/g }
     );
   }
 
@@ -229,8 +232,8 @@ function extractGoAPICalls(code: string, service: string): APICall[] {
     for (const pattern of patterns) {
       const matches = line.matchAll(pattern.regex);
       for (const match of matches) {
-        const method = match[1] || "unknown";
-        const endpoint = pattern.name + "." + method;
+        const method = match[1] || 'unknown';
+        const endpoint = pattern.name + '.' + method;
         const scopes = SCOPE_MAPPINGS[service]?.[endpoint] || [];
 
         if (scopes.length > 0) {
@@ -240,7 +243,7 @@ function extractGoAPICalls(code: string, service: string): APICall[] {
             endpoint,
             requiredScope: scopes[0],
             location: {
-              file: "analysis",
+              file: 'analysis',
               line: i + 1,
             },
           });
@@ -259,48 +262,48 @@ function getServicePatterns(service: string): Array<{ name: string; regex: RegEx
   const patterns: Array<{ name: string; regex: RegExp }> = [];
 
   switch (service) {
-    case "stripe":
+    case 'stripe':
       patterns.push(
-        { name: "customers", regex: /stripe\.customers\.(create|retrieve|list|update|del)/g },
-        { name: "charges", regex: /stripe\.charges\.(create|retrieve|list)/g },
+        { name: 'customers', regex: /stripe\.customers\.(create|retrieve|list|update|del)/g },
+        { name: 'charges', regex: /stripe\.charges\.(create|retrieve|list)/g },
         {
-          name: "paymentIntents",
+          name: 'paymentIntents',
           regex: /stripe\.paymentIntents\.(create|retrieve|confirm|cancel)/g,
         },
         {
-          name: "subscriptions",
+          name: 'subscriptions',
           regex: /stripe\.subscriptions\.(create|retrieve|list|update|cancel)/g,
         }
       );
       break;
 
-    case "openai":
+    case 'openai':
       patterns.push(
-        { name: "chat.completions", regex: /openai\.chat\.completions\.create/g },
-        { name: "embeddings", regex: /openai\.embeddings\.create/g },
-        { name: "images", regex: /openai\.images\.generate/g }
+        { name: 'chat.completions', regex: /openai\.chat\.completions\.create/g },
+        { name: 'embeddings', regex: /openai\.embeddings\.create/g },
+        { name: 'images', regex: /openai\.images\.generate/g }
       );
       break;
 
-    case "aws":
+    case 'aws':
       patterns.push(
-        { name: "s3", regex: /s3\.(putObject|getObject|listObjects|deleteObject)/g },
-        { name: "lambda", regex: /lambda\.invoke/g },
-        { name: "dynamodb", regex: /dynamodb\.(putItem|getItem|scan|query)/g }
+        { name: 's3', regex: /s3\.(putObject|getObject|listObjects|deleteObject)/g },
+        { name: 'lambda', regex: /lambda\.invoke/g },
+        { name: 'dynamodb', regex: /dynamodb\.(putItem|getItem|scan|query)/g }
       );
       break;
 
-    case "twilio":
+    case 'twilio':
       patterns.push(
-        { name: "messages", regex: /twilio\.messages\.(create|list)/g },
-        { name: "calls", regex: /twilio\.calls\.(create|list)/g }
+        { name: 'messages', regex: /twilio\.messages\.(create|list)/g },
+        { name: 'calls', regex: /twilio\.calls\.(create|list)/g }
       );
       break;
 
-    case "sendgrid":
+    case 'sendgrid':
       patterns.push(
-        { name: "send", regex: /sgMail\.send/g },
-        { name: "templates", regex: /sgMail\.templates\.(create|list)/g }
+        { name: 'send', regex: /sgMail\.send/g },
+        { name: 'templates', regex: /sgMail\.templates\.(create|list)/g }
       );
       break;
   }
@@ -368,28 +371,26 @@ function generateSuggestions(
 
   if (unusedScopes.length > 0) {
     suggestions.push(
-      `${unusedScopes.length} scope(s) can be removed: ${unusedScopes.slice(0, 3).join(", ")}${unusedScopes.length > 3 ? "..." : ""}`
+      `${unusedScopes.length} scope(s) can be removed: ${unusedScopes.slice(0, 3).join(', ')}${unusedScopes.length > 3 ? '...' : ''}`
     );
   }
 
   // Service-specific suggestions
-  if (service === "stripe") {
-    const hasRead = requiredScopes.some((s) => s.includes(":read"));
-    const hasWrite = requiredScopes.some((s) => s.includes(":write"));
+  if (service === 'stripe') {
+    const hasRead = requiredScopes.some((s) => s.includes(':read'));
+    const hasWrite = requiredScopes.some((s) => s.includes(':write'));
 
     if (hasRead && !hasWrite) {
-      suggestions.push("Consider using a read-only Stripe key for better security.");
+      suggestions.push('Consider using a read-only Stripe key for better security.');
     }
   }
 
-  if (service === "aws") {
-    const hasS3Write = requiredScopes.includes("s3:PutObject");
-    const hasS3Delete = requiredScopes.includes("s3:DeleteObject");
+  if (service === 'aws') {
+    const hasS3Write = requiredScopes.includes('s3:PutObject');
+    const hasS3Delete = requiredScopes.includes('s3:DeleteObject');
 
     if (hasS3Write || hasS3Delete) {
-      suggestions.push(
-        "Consider using separate IAM roles for read and write operations on S3."
-      );
+      suggestions.push('Consider using separate IAM roles for read and write operations on S3.');
     }
   }
 
@@ -408,22 +409,25 @@ export interface ProjectAnalysisResult {
   };
 }
 
-export function analyzeProject(files: Record<string, string>, services: string[]): ProjectAnalysisResult {
+export function analyzeProject(
+  files: Record<string, string>,
+  services: string[]
+): ProjectAnalysisResult {
   const results: Record<string, ScopeAnalysisResult> = {};
 
   for (const service of services) {
     let mergedCalls: APICall[] = [];
 
     for (const [filename, code] of Object.entries(files)) {
-      const ext = filename.split(".").pop();
+      const ext = filename.split('.').pop();
 
       let serviceCalls: APICall[] = [];
 
-      if (ext === "js" || ext === "ts" || ext === "jsx" || ext === "tsx") {
+      if (ext === 'js' || ext === 'ts' || ext === 'jsx' || ext === 'tsx') {
         serviceCalls = extractJavaScriptAPICalls(code, service);
-      } else if (ext === "py") {
+      } else if (ext === 'py') {
         serviceCalls = extractPythonAPICalls(code, service);
-      } else if (ext === "go") {
+      } else if (ext === 'go') {
         serviceCalls = extractGoAPICalls(code, service);
       }
 

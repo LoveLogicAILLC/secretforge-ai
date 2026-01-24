@@ -212,6 +212,7 @@ Add to your Claude Code MCP settings:
 ```
 
 Use in Claude:
+
 - "Analyze my project and detect required API keys"
 - "Provision a Stripe API key for production"
 - "Validate my secrets for SOC2 compliance"
@@ -268,17 +269,17 @@ See `.env.example` for full list. Key variables:
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Runtime | TypeScript, Node.js 20+ |
-| Monorepo | Turborepo |
-| API | Hono, Cloudflare Workers |
-| Storage | D1 (SQLite), KV, Vectorize |
-| AI/LLM | OpenAI GPT-4o, Ollama (Llama 3.1) |
-| MCP | @modelcontextprotocol/sdk |
-| CLI | Commander, Inquirer, Chalk, Ora |
-| Web | Next.js 14, React, Tailwind CSS |
-| Agents | Cloudflare Agents API |
+| Layer    | Technology                        |
+| -------- | --------------------------------- |
+| Runtime  | TypeScript, Node.js 20+           |
+| Monorepo | Turborepo                         |
+| API      | Hono, Cloudflare Workers          |
+| Storage  | D1 (SQLite), KV, Vectorize        |
+| AI/LLM   | OpenAI GPT-4o, Ollama (Llama 3.1) |
+| MCP      | @modelcontextprotocol/sdk         |
+| CLI      | Commander, Inquirer, Chalk, Ora   |
+| Web      | Next.js 14, React, Tailwind CSS   |
+| Agents   | Cloudflare Agents API             |
 
 ## Roadmap
 
@@ -322,6 +323,7 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Acknowledgments
 
 Built with:
+
 - [Cloudflare Workers](https://workers.cloudflare.com/)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 - [Anthropic Claude](https://www.anthropic.com/)

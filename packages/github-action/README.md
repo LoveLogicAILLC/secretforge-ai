@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Scan for exposed secrets
         uses: secretforge/shield@v1
         with:
@@ -88,12 +88,12 @@ Use the SecretForge CLI: npx @secretforge/cli init
 
 ## 🔧 Configuration Options
 
-| Input | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `github-token` | ✅ | - | GitHub token for PR comments |
-| `auto-provision` | ❌ | `false` | Automatically provision secure replacements |
-| `secretforge-api-key` | ❌ | - | API key for auto-provisioning |
-| `fail-on-secrets` | ❌ | `true` | Fail the check if secrets are found |
+| Input                 | Required | Default | Description                                 |
+| --------------------- | -------- | ------- | ------------------------------------------- |
+| `github-token`        | ✅       | -       | GitHub token for PR comments                |
+| `auto-provision`      | ❌       | `false` | Automatically provision secure replacements |
+| `secretforge-api-key` | ❌       | -       | API key for auto-provisioning               |
+| `fail-on-secrets`     | ❌       | `true`  | Fail the check if secrets are found         |
 
 ## 🌟 Supported Secret Types
 

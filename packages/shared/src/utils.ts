@@ -93,10 +93,7 @@ export function formatTimestamp(timestamp: string): string {
  * Sanitize user input
  */
 export function sanitizeInput(input: string): string {
-  return input
-    .trim()
-    .replace(/[<>]/g, '')
-    .slice(0, 1000); // Max length
+  return input.trim().replace(/[<>]/g, '').slice(0, 1000); // Max length
 }
 
 /**

@@ -1,13 +1,13 @@
-import { Hono } from "hono";
-import { HTTPException } from "hono/http-exception";
-import { createJWT, generateApiKey } from "../middleware/auth";
-import { validateRequest } from "../middleware/errorHandler";
+import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
+import { createJWT, generateApiKey } from '../middleware/auth';
+import { validateRequest } from '../middleware/errorHandler';
 import {
   createUserSchema,
   loginSchema,
   createApiKeySchema,
   revokeApiKeySchema,
-} from "../schemas/validation";
+} from '../schemas/validation';
 
 interface AuthEnv {
   DATABASE: D1Database;
@@ -21,18 +21,16 @@ const authRouter = new Hono<{ Bindings: AuthEnv }>();
  * Sign up new user
  * POST /auth/signup
  */
-authRouter.post("/signup", validateRequest(createUserSchema), async (c) => {
-  const { email, password, tier } = c.get("validatedData");
+authRouter.post('/signup', validateRequest(createUserSchema), async (c) => {
+  const { email, password, tier } = c.get('validatedData');
 
   // Check if user already exists
-  const existing = await c.env.DATABASE.prepare(
-    "SELECT id FROM users WHERE email = ?"
-  )
+  const existing = await c.env.DATABASE.prepare('SELECT id FROM users WHERE email = ?')
     .bind(email)
     .first();
 
   if (existing) {
-    throw new HTTPException(409, { message: "Email already registered" });
+    throw new HTTPException(409, { message: 'Email already registered' });
   }
 
   // Hash password
@@ -44,14 +42,7 @@ authRouter.post("/signup", validateRequest(createUserSchema), async (c) => {
     `INSERT INTO users (id, email, password_hash, tier, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?)`
   )
-    .bind(
-      userId,
-      email,
-      passwordHash,
-      tier,
-      new Date().toISOString(),
-      new Date().toISOString()
-    )
+    .bind(userId, email, passwordHash, tier, new Date().toISOString(), new Date().toISOString())
     .run();
 
   // Create default user preferences
@@ -59,7 +50,7 @@ authRouter.post("/signup", validateRequest(createUserSchema), async (c) => {
     `INSERT INTO user_preferences (user_id, notification_email, compliance_frameworks)
      VALUES (?, ?, ?)`
   )
-    .bind(userId, email, JSON.stringify(["SOC2"]))
+    .bind(userId, email, JSON.stringify(['SOC2']))
     .run();
 
   // Generate JWT
@@ -89,28 +80,28 @@ authRouter.post("/signup", validateRequest(createUserSchema), async (c) => {
  * Login
  * POST /auth/login
  */
-authRouter.post("/login", validateRequest(loginSchema), async (c) => {
-  const { email, password } = c.get("validatedData");
+authRouter.post('/login', validateRequest(loginSchema), async (c) => {
+  const { email, password } = c.get('validatedData');
 
   // Find user
   const user = await c.env.DATABASE.prepare(
-    "SELECT id, email, password_hash, tier, organization_id FROM users WHERE email = ? AND is_active = 1"
+    'SELECT id, email, password_hash, tier, organization_id FROM users WHERE email = ? AND is_active = 1'
   )
     .bind(email)
     .first();
 
   if (!user) {
-    throw new HTTPException(401, { message: "Invalid credentials" });
+    throw new HTTPException(401, { message: 'Invalid credentials' });
   }
 
   // Verify password
   const isValid = await verifyPassword(password, user.password_hash as string);
   if (!isValid) {
-    throw new HTTPException(401, { message: "Invalid credentials" });
+    throw new HTTPException(401, { message: 'Invalid credentials' });
   }
 
   // Update last login
-  await c.env.DATABASE.prepare("UPDATE users SET last_login_at = ? WHERE id = ?")
+  await c.env.DATABASE.prepare('UPDATE users SET last_login_at = ? WHERE id = ?')
     .bind(new Date().toISOString(), user.id)
     .run();
 
@@ -140,22 +131,22 @@ authRouter.post("/login", validateRequest(loginSchema), async (c) => {
  * Get current user
  * GET /auth/me
  */
-authRouter.get("/me", async (c) => {
-  const user = c.get("user");
+authRouter.get('/me', async (c) => {
+  const user = c.get('user');
 
   if (!user) {
-    throw new HTTPException(401, { message: "Not authenticated" });
+    throw new HTTPException(401, { message: 'Not authenticated' });
   }
 
   // Get full user details
   const userDetails = await c.env.DATABASE.prepare(
-    "SELECT id, email, tier, organization_id, created_at FROM users WHERE id = ?"
+    'SELECT id, email, tier, organization_id, created_at FROM users WHERE id = ?'
   )
     .bind(user.userId)
     .first();
 
   if (!userDetails) {
-    throw new HTTPException(404, { message: "User not found" });
+    throw new HTTPException(404, { message: 'User not found' });
   }
 
   return c.json({
@@ -167,13 +158,13 @@ authRouter.get("/me", async (c) => {
  * Create API key
  * POST /auth/api-keys
  */
-authRouter.post("/api-keys", validateRequest(createApiKeySchema), async (c) => {
-  const user = c.get("user");
+authRouter.post('/api-keys', validateRequest(createApiKeySchema), async (c) => {
+  const user = c.get('user');
   if (!user) {
-    throw new HTTPException(401, { message: "Not authenticated" });
+    throw new HTTPException(401, { message: 'Not authenticated' });
   }
 
-  const { name, scopes, expiresIn } = c.get("validatedData");
+  const { name, scopes, expiresIn } = c.get('validatedData');
 
   // Generate API key
   const apiKey = await generateApiKey();
@@ -219,10 +210,10 @@ authRouter.post("/api-keys", validateRequest(createApiKeySchema), async (c) => {
  * List API keys
  * GET /auth/api-keys
  */
-authRouter.get("/api-keys", async (c) => {
-  const user = c.get("user");
+authRouter.get('/api-keys', async (c) => {
+  const user = c.get('user');
   if (!user) {
-    throw new HTTPException(401, { message: "Not authenticated" });
+    throw new HTTPException(401, { message: 'Not authenticated' });
   }
 
   const keys = await c.env.DATABASE.prepare(
@@ -237,7 +228,7 @@ authRouter.get("/api-keys", async (c) => {
   return c.json({
     apiKeys: keys.results.map((key) => ({
       ...key,
-      scopes: JSON.parse((key.scopes as string) || "[]"),
+      scopes: JSON.parse((key.scopes as string) || '[]'),
     })),
   });
 });
@@ -246,41 +237,37 @@ authRouter.get("/api-keys", async (c) => {
  * Revoke API key
  * DELETE /auth/api-keys/:id
  */
-authRouter.delete("/api-keys/:id", async (c) => {
-  const user = c.get("user");
+authRouter.delete('/api-keys/:id', async (c) => {
+  const user = c.get('user');
   if (!user) {
-    throw new HTTPException(401, { message: "Not authenticated" });
+    throw new HTTPException(401, { message: 'Not authenticated' });
   }
 
-  const keyId = c.req.param("id");
+  const keyId = c.req.param('id');
 
   // Verify ownership
-  const key = await c.env.DATABASE.prepare(
-    "SELECT id FROM api_keys WHERE id = ? AND user_id = ?"
-  )
+  const key = await c.env.DATABASE.prepare('SELECT id FROM api_keys WHERE id = ? AND user_id = ?')
     .bind(keyId, user.userId)
     .first();
 
   if (!key) {
-    throw new HTTPException(404, { message: "API key not found" });
+    throw new HTTPException(404, { message: 'API key not found' });
   }
 
   // Revoke key
-  await c.env.DATABASE.prepare("UPDATE api_keys SET revoked = 1 WHERE id = ?")
-    .bind(keyId)
-    .run();
+  await c.env.DATABASE.prepare('UPDATE api_keys SET revoked = 1 WHERE id = ?').bind(keyId).run();
 
-  return c.json({ message: "API key revoked successfully" });
+  return c.json({ message: 'API key revoked successfully' });
 });
 
 /**
  * Refresh JWT token
  * POST /auth/refresh
  */
-authRouter.post("/refresh", async (c) => {
-  const user = c.get("user");
+authRouter.post('/refresh', async (c) => {
+  const user = c.get('user');
   if (!user) {
-    throw new HTTPException(401, { message: "Not authenticated" });
+    throw new HTTPException(401, { message: 'Not authenticated' });
   }
 
   // Generate new JWT
@@ -303,7 +290,7 @@ authRouter.post("/refresh", async (c) => {
 async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
-  const hash = await crypto.subtle.digest("SHA-256", data);
+  const hash = await crypto.subtle.digest('SHA-256', data);
   return btoa(String.fromCharCode(...new Uint8Array(hash)));
 }
 
@@ -321,7 +308,7 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
 async function hashApiKey(apiKey: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(apiKey);
-  const hash = await crypto.subtle.digest("SHA-256", data);
+  const hash = await crypto.subtle.digest('SHA-256', data);
   return btoa(String.fromCharCode(...new Uint8Array(hash)));
 }
 

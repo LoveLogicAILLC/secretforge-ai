@@ -1,14 +1,27 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Shield, Zap, Github, Terminal, Sparkles, ArrowRight, AlertTriangle, TrendingUp, Lock, Code, GitPullRequest } from "lucide-react";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  CheckCircle2,
+  Shield,
+  Zap,
+  Github,
+  Terminal,
+  Sparkles,
+  ArrowRight,
+  AlertTriangle,
+  TrendingUp,
+  Lock,
+  Code,
+  GitPullRequest,
+} from 'lucide-react';
 
 export default function LandingPage() {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
@@ -22,11 +35,13 @@ export default function LandingPage() {
             </span>
           </div>
           <div className="flex gap-4">
-            <Button variant="ghost" className="text-slate-300">Docs</Button>
-            <Button variant="ghost" className="text-slate-300">Pricing</Button>
-            <Button className="bg-purple-600 hover:bg-purple-700">
-              Get Started
+            <Button variant="ghost" className="text-slate-300">
+              Docs
             </Button>
+            <Button variant="ghost" className="text-slate-300">
+              Pricing
+            </Button>
+            <Button className="bg-purple-600 hover:bg-purple-700">Get Started</Button>
           </div>
         </div>
       </nav>
@@ -37,7 +52,7 @@ export default function LandingPage() {
           <Sparkles className="w-3 h-3 mr-1" />
           AI-Powered Secret Management
         </Badge>
-        
+
         <h1 className="text-6xl md:text-7xl font-black mb-6 leading-tight">
           <span className="bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
             Stop Committing
@@ -98,7 +113,9 @@ export default function LandingPage() {
               <div className="text-slate-300 mt-1">📦 Detected: stripe, openai, anthropic</div>
               <div className="text-purple-400 mt-2">🔑 Provisioning keys...</div>
               <div className="text-green-400 mt-1">✅ All secrets secured in 8 seconds</div>
-              <div className="text-slate-400 mt-4 text-sm">No more .env files. No more exposed keys. Just magic.</div>
+              <div className="text-slate-400 mt-4 text-sm">
+                No more .env files. No more exposed keys. Just magic.
+              </div>
             </div>
           </div>
         </div>
@@ -112,8 +129,8 @@ export default function LandingPage() {
               You're One Commit Away From Disaster
             </h2>
             <p className="text-xl text-slate-400 max-w-3xl mx-auto">
-              Every day, developers accidentally expose API keys on GitHub.
-              The average cost? <span className="text-red-400 font-bold">$6,500</span> in fraudulent API usage.
+              Every day, developers accidentally expose API keys on GitHub. The average cost?{' '}
+              <span className="text-red-400 font-bold">$6,500</span> in fraudulent API usage.
             </p>
           </div>
 
@@ -125,7 +142,8 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-slate-400">
-                  Bots scan GitHub 24/7. Your exposed key is compromised in <span className="text-red-400 font-bold">&lt;10 minutes</span>.
+                  Bots scan GitHub 24/7. Your exposed key is compromised in{' '}
+                  <span className="text-red-400 font-bold">&lt;10 minutes</span>.
                 </p>
               </CardContent>
             </Card>
@@ -137,7 +155,8 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-slate-400">
-                  Exposed Stripe keys = unauthorized charges. OpenAI keys = crypto mining. AWS keys = <span className="text-orange-400 font-bold">$50k+ bills</span>.
+                  Exposed Stripe keys = unauthorized charges. OpenAI keys = crypto mining. AWS keys
+                  = <span className="text-orange-400 font-bold">$50k+ bills</span>.
                 </p>
               </CardContent>
             </Card>
@@ -149,7 +168,8 @@ export default function LandingPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-slate-400">
-                  Failed audits. Lost customers. SOC2/GDPR violations = <span className="text-yellow-400 font-bold">massive fines</span>.
+                  Failed audits. Lost customers. SOC2/GDPR violations ={' '}
+                  <span className="text-yellow-400 font-bold">massive fines</span>.
                 </p>
               </CardContent>
             </Card>
@@ -242,8 +262,8 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col md:flex-row gap-4 justify-center items-center max-w-xl mx-auto">
-            <Input 
-              placeholder="your@email.com" 
+            <Input
+              placeholder="your@email.com"
               className="bg-slate-900/50 border-purple-700 text-white"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -269,10 +289,18 @@ export default function LandingPage() {
               <span className="font-bold text-white">SecretForge AI</span>
             </div>
             <div className="flex gap-6 text-slate-400">
-              <a href="#" className="hover:text-purple-400">GitHub</a>
-              <a href="#" className="hover:text-purple-400">Twitter</a>
-              <a href="#" className="hover:text-purple-400">Docs</a>
-              <a href="#" className="hover:text-purple-400">Discord</a>
+              <a href="#" className="hover:text-purple-400">
+                GitHub
+              </a>
+              <a href="#" className="hover:text-purple-400">
+                Twitter
+              </a>
+              <a href="#" className="hover:text-purple-400">
+                Docs
+              </a>
+              <a href="#" className="hover:text-purple-400">
+                Discord
+              </a>
             </div>
           </div>
           <div className="mt-8 text-center text-slate-500 text-sm">

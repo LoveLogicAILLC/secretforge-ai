@@ -4,7 +4,7 @@
  */
 
 export interface LLMConfig {
-  provider: "openai" | "ollama" | "auto";
+  provider: 'openai' | 'ollama' | 'auto';
   openaiApiKey?: string;
   ollamaBaseUrl?: string;
   model?: string;
@@ -13,7 +13,7 @@ export interface LLMConfig {
 }
 
 export interface LLMMessage {
-  role: "system" | "user" | "assistant";
+  role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
@@ -42,9 +42,9 @@ export class LLMProvider {
 
   constructor(config: LLMConfig) {
     this.config = {
-      provider: config.provider || "auto",
-      openaiApiKey: config.openaiApiKey || "",
-      ollamaBaseUrl: config.ollamaBaseUrl || "http://localhost:11434",
+      provider: config.provider || 'auto',
+      openaiApiKey: config.openaiApiKey || '',
+      ollamaBaseUrl: config.ollamaBaseUrl || 'http://localhost:11434',
       model: config.model || this.getDefaultModel(config.provider),
       temperature: config.temperature ?? 0.7,
       maxTokens: config.maxTokens ?? 2000,
@@ -53,12 +53,12 @@ export class LLMProvider {
 
   private getDefaultModel(provider: string): string {
     switch (provider) {
-      case "openai":
-        return "gpt-4o";
-      case "ollama":
-        return "llama3.1:70b";
+      case 'openai':
+        return 'gpt-4o';
+      case 'ollama':
+        return 'llama3.1:70b';
       default:
-        return "gpt-4o";
+        return 'gpt-4o';
     }
   }
 
@@ -69,18 +69,18 @@ export class LLMProvider {
     const provider = await this.selectProvider();
 
     try {
-      if (provider === "openai") {
+      if (provider === 'openai') {
         return await this.completeOpenAI(messages);
       } else {
         return await this.completeOllama(messages);
       }
     } catch (error) {
       // Fallback to other provider
-      if (this.config.provider === "auto") {
-        const fallbackProvider = provider === "openai" ? "ollama" : "openai";
+      if (this.config.provider === 'auto') {
+        const fallbackProvider = provider === 'openai' ? 'ollama' : 'openai';
         console.warn(`${provider} failed, falling back to ${fallbackProvider}`);
 
-        if (fallbackProvider === "openai") {
+        if (fallbackProvider === 'openai') {
           return await this.completeOpenAI(messages);
         } else {
           return await this.completeOllama(messages);
@@ -97,7 +97,7 @@ export class LLMProvider {
   async *stream(messages: LLMMessage[]): AsyncGenerator<StreamChunk> {
     const provider = await this.selectProvider();
 
-    if (provider === "openai") {
+    if (provider === 'openai') {
       yield* this.streamOpenAI(messages);
     } else {
       yield* this.streamOllama(messages);
@@ -107,20 +107,20 @@ export class LLMProvider {
   /**
    * Select which provider to use
    */
-  private async selectProvider(): Promise<"openai" | "ollama"> {
-    if (this.config.provider !== "auto") {
+  private async selectProvider(): Promise<'openai' | 'ollama'> {
+    if (this.config.provider !== 'auto') {
       return this.config.provider;
     }
 
     // Check if Ollama is available
     try {
       const response = await fetch(`${this.config.ollamaBaseUrl}/api/tags`, {
-        method: "GET",
+        method: 'GET',
         signal: AbortSignal.timeout(2000), // 2 second timeout
       });
 
       if (response.ok) {
-        return "ollama"; // Prefer local Ollama for privacy and cost
+        return 'ollama'; // Prefer local Ollama for privacy and cost
       }
     } catch {
       // Ollama not available
@@ -128,20 +128,20 @@ export class LLMProvider {
 
     // Fallback to OpenAI
     if (this.config.openaiApiKey) {
-      return "openai";
+      return 'openai';
     }
 
-    throw new Error("No LLM provider available. Configure OpenAI API key or run Ollama locally.");
+    throw new Error('No LLM provider available. Configure OpenAI API key or run Ollama locally.');
   }
 
   /**
    * OpenAI completion (non-streaming)
    */
   private async completeOpenAI(messages: LLMMessage[]): Promise<LLMResponse> {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${this.config.openaiApiKey}`,
       },
       body: JSON.stringify({
@@ -157,7 +157,7 @@ export class LLMProvider {
       throw new Error(`OpenAI API error: ${error}`);
     }
 
-    const data = await response.json() as any;
+    const data = (await response.json()) as any;
 
     return {
       content: data.choices[0].message.content,
@@ -167,7 +167,7 @@ export class LLMProvider {
         totalTokens: data.usage.total_tokens,
       },
       model: data.model,
-      provider: "openai",
+      provider: 'openai',
     };
   }
 
@@ -176,9 +176,9 @@ export class LLMProvider {
    */
   private async completeOllama(messages: LLMMessage[]): Promise<LLMResponse> {
     const response = await fetch(`${this.config.ollamaBaseUrl}/api/chat`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: this.config.model,
@@ -196,7 +196,7 @@ export class LLMProvider {
       throw new Error(`Ollama API error: ${error}`);
     }
 
-    const data = await response.json() as any;
+    const data = (await response.json()) as any;
 
     return {
       content: data.message.content,
@@ -206,7 +206,7 @@ export class LLMProvider {
         totalTokens: (data.prompt_eval_count || 0) + (data.eval_count || 0),
       },
       model: data.model,
-      provider: "ollama",
+      provider: 'ollama',
     };
   }
 
@@ -214,10 +214,10 @@ export class LLMProvider {
    * OpenAI streaming completion
    */
   private async *streamOpenAI(messages: LLMMessage[]): AsyncGenerator<StreamChunk> {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${this.config.openaiApiKey}`,
       },
       body: JSON.stringify({
@@ -234,30 +234,30 @@ export class LLMProvider {
     }
 
     const reader = response.body?.getReader();
-    if (!reader) throw new Error("No response body");
+    if (!reader) throw new Error('No response body');
 
     const decoder = new TextDecoder();
-    let buffer = "";
+    let buffer = '';
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
       for (const line of lines) {
-        if (line.startsWith("data: ")) {
+        if (line.startsWith('data: ')) {
           const data = line.slice(6);
-          if (data === "[DONE]") {
-            yield { content: "", done: true };
+          if (data === '[DONE]') {
+            yield { content: '', done: true };
             return;
           }
 
           try {
             const parsed = JSON.parse(data) as any;
-            const content = parsed.choices[0]?.delta?.content || "";
+            const content = parsed.choices[0]?.delta?.content || '';
             if (content) {
               yield { content, done: false };
             }
@@ -274,9 +274,9 @@ export class LLMProvider {
    */
   private async *streamOllama(messages: LLMMessage[]): AsyncGenerator<StreamChunk> {
     const response = await fetch(`${this.config.ollamaBaseUrl}/api/chat`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         model: this.config.model,
@@ -294,7 +294,7 @@ export class LLMProvider {
     }
 
     const reader = response.body?.getReader();
-    if (!reader) throw new Error("No response body");
+    if (!reader) throw new Error('No response body');
 
     const decoder = new TextDecoder();
 
@@ -303,12 +303,12 @@ export class LLMProvider {
       if (done) break;
 
       const text = decoder.decode(value, { stream: true });
-      const lines = text.split("\n").filter((line) => line.trim());
+      const lines = text.split('\n').filter((line) => line.trim());
 
       for (const line of lines) {
         try {
           const parsed = JSON.parse(line) as any;
-          const content = parsed.message?.content || "";
+          const content = parsed.message?.content || '';
 
           if (content) {
             yield { content, done: parsed.done || false };
@@ -331,13 +331,13 @@ export class LLMProvider {
  */
 export interface ParsedCommand {
   intent:
-    | "provision_secret"
-    | "rotate_secret"
-    | "list_secrets"
-    | "analyze_project"
-    | "check_compliance"
-    | "help"
-    | "unknown";
+    | 'provision_secret'
+    | 'rotate_secret'
+    | 'list_secrets'
+    | 'analyze_project'
+    | 'check_compliance'
+    | 'help'
+    | 'unknown';
   confidence: number;
   parameters: {
     service?: string;
@@ -378,13 +378,13 @@ export class NaturalLanguageParser {
 
     // Provision patterns
     if (
-      lower.includes("provision") ||
-      lower.includes("create") ||
-      lower.includes("new secret") ||
-      lower.includes("add key")
+      lower.includes('provision') ||
+      lower.includes('create') ||
+      lower.includes('new secret') ||
+      lower.includes('add key')
     ) {
       return {
-        intent: "provision_secret",
+        intent: 'provision_secret',
         confidence: 0.9,
         parameters: {
           service: this.extractService(query),
@@ -395,9 +395,9 @@ export class NaturalLanguageParser {
     }
 
     // Rotate patterns
-    if (lower.includes("rotate") || lower.includes("refresh") || lower.includes("renew")) {
+    if (lower.includes('rotate') || lower.includes('refresh') || lower.includes('renew')) {
       return {
-        intent: "rotate_secret",
+        intent: 'rotate_secret',
         confidence: 0.9,
         parameters: {
           service: this.extractService(query),
@@ -409,13 +409,13 @@ export class NaturalLanguageParser {
 
     // List patterns
     if (
-      lower.includes("list") ||
-      lower.includes("show") ||
-      lower.includes("get all") ||
-      lower.includes("what secrets")
+      lower.includes('list') ||
+      lower.includes('show') ||
+      lower.includes('get all') ||
+      lower.includes('what secrets')
     ) {
       return {
-        intent: "list_secrets",
+        intent: 'list_secrets',
         confidence: 0.9,
         parameters: {
           environment: this.extractEnvironment(query),
@@ -425,9 +425,9 @@ export class NaturalLanguageParser {
     }
 
     // Analyze patterns
-    if (lower.includes("analyze") || lower.includes("scan") || lower.includes("detect")) {
+    if (lower.includes('analyze') || lower.includes('scan') || lower.includes('detect')) {
       return {
-        intent: "analyze_project",
+        intent: 'analyze_project',
         confidence: 0.9,
         parameters: {},
         originalQuery: query,
@@ -435,9 +435,9 @@ export class NaturalLanguageParser {
     }
 
     // Compliance patterns
-    if (lower.includes("compliance") || lower.includes("soc2") || lower.includes("gdpr")) {
+    if (lower.includes('compliance') || lower.includes('soc2') || lower.includes('gdpr')) {
       return {
-        intent: "check_compliance",
+        intent: 'check_compliance',
         confidence: 0.9,
         parameters: {
           framework: this.extractComplianceFramework(query),
@@ -448,13 +448,13 @@ export class NaturalLanguageParser {
 
     // Help patterns
     if (
-      lower.includes("help") ||
-      lower.includes("how to") ||
-      lower.includes("what can") ||
-      query === "?"
+      lower.includes('help') ||
+      lower.includes('how to') ||
+      lower.includes('what can') ||
+      query === '?'
     ) {
       return {
-        intent: "help",
+        intent: 'help',
         confidence: 1.0,
         parameters: {},
         originalQuery: query,
@@ -462,7 +462,7 @@ export class NaturalLanguageParser {
     }
 
     return {
-      intent: "unknown",
+      intent: 'unknown',
       confidence: 0.3,
       parameters: {},
       originalQuery: query,
@@ -495,8 +495,8 @@ Extract the intent and parameters from the user query. Respond with JSON only:
 }`;
 
     const messages: LLMMessage[] = [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: query },
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: query },
     ];
 
     const response = await this.llm.complete(messages);
@@ -509,7 +509,7 @@ Extract the intent and parameters from the user query. Respond with JSON only:
       };
     } catch {
       return {
-        intent: "unknown",
+        intent: 'unknown',
         confidence: 0.2,
         parameters: {},
         originalQuery: query,
@@ -522,16 +522,16 @@ Extract the intent and parameters from the user query. Respond with JSON only:
    */
   private extractService(query: string): string | undefined {
     const services = [
-      "stripe",
-      "openai",
-      "aws",
-      "anthropic",
-      "twilio",
-      "sendgrid",
-      "supabase",
-      "mongodb",
-      "postgresql",
-      "redis",
+      'stripe',
+      'openai',
+      'aws',
+      'anthropic',
+      'twilio',
+      'sendgrid',
+      'supabase',
+      'mongodb',
+      'postgresql',
+      'redis',
     ];
 
     const lower = query.toLowerCase();
@@ -547,12 +547,12 @@ Extract the intent and parameters from the user query. Respond with JSON only:
   /**
    * Extract environment from query
    */
-  private extractEnvironment(query: string): "development" | "staging" | "production" | undefined {
+  private extractEnvironment(query: string): 'development' | 'staging' | 'production' | undefined {
     const lower = query.toLowerCase();
 
-    if (lower.includes("prod") || lower.includes("production")) return "production";
-    if (lower.includes("staging") || lower.includes("stage")) return "staging";
-    if (lower.includes("dev") || lower.includes("development")) return "development";
+    if (lower.includes('prod') || lower.includes('production')) return 'production';
+    if (lower.includes('staging') || lower.includes('stage')) return 'staging';
+    if (lower.includes('dev') || lower.includes('development')) return 'development';
 
     return undefined;
   }
@@ -562,9 +562,7 @@ Extract the intent and parameters from the user query. Respond with JSON only:
    */
   private extractSecretId(query: string): string | undefined {
     // UUID pattern
-    const uuidMatch = query.match(
-      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
-    );
+    const uuidMatch = query.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
     if (uuidMatch) {
       return uuidMatch[0];
     }
@@ -578,10 +576,10 @@ Extract the intent and parameters from the user query. Respond with JSON only:
   private extractComplianceFramework(query: string): string | undefined {
     const lower = query.toLowerCase();
 
-    if (lower.includes("soc2") || lower.includes("soc 2")) return "SOC2";
-    if (lower.includes("gdpr")) return "GDPR";
-    if (lower.includes("hipaa")) return "HIPAA";
-    if (lower.includes("pci") || lower.includes("pci-dss")) return "PCI-DSS";
+    if (lower.includes('soc2') || lower.includes('soc 2')) return 'SOC2';
+    if (lower.includes('gdpr')) return 'GDPR';
+    if (lower.includes('hipaa')) return 'HIPAA';
+    if (lower.includes('pci') || lower.includes('pci-dss')) return 'PCI-DSS';
 
     return undefined;
   }

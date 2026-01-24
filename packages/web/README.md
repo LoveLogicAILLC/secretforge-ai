@@ -32,11 +32,13 @@ pnpm start  # Production server
 ## Deployment
 
 ### Vercel
+
 ```bash
 vercel deploy
 ```
 
 ### Cloudflare Pages
+
 ```bash
 pnpm build
 wrangler pages publish .next

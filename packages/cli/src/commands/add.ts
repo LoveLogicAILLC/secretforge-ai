@@ -8,7 +8,10 @@ import { DefaultCryptoProvider } from '../crypto/CryptoProvider.js';
 /**
  * Add a new secret interactively
  */
-export async function addCommand(name: string, options: { env?: string; tags?: string }): Promise<void> {
+export async function addCommand(
+  name: string,
+  options: { env?: string; tags?: string }
+): Promise<void> {
   const configManager = new ConfigManager();
 
   // Check if initialized
@@ -87,7 +90,10 @@ export async function addCommand(name: string, options: { env?: string; tags?: s
     } else {
       // Parse tags
       const tags = answers.tags
-        ? answers.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+        ? answers.tags
+            .split(',')
+            .map((t: string) => t.trim())
+            .filter(Boolean)
         : [];
 
       // Add new secret

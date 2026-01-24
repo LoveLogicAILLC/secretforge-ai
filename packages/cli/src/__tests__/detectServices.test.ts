@@ -19,11 +19,7 @@ async function detectRequiredServices(context: CLIContext): Promise<string[]> {
 
   const detected: string[] = [];
   for (const [service, packages] of Object.entries(serviceMap)) {
-    if (
-      packages.some((pkg) =>
-        Object.keys(context.dependencies).some((d) => d.includes(pkg))
-      )
-    ) {
+    if (packages.some((pkg) => Object.keys(context.dependencies).some((d) => d.includes(pkg)))) {
       detected.push(service);
     }
   }
@@ -69,7 +65,7 @@ describe('detectRequiredServices', () => {
       ...baseContext,
       dependencies: {
         react: '^18.0.0',
-        'next': '^14.0.0',
+        next: '^14.0.0',
       },
     };
     const services = await detectRequiredServices(context);

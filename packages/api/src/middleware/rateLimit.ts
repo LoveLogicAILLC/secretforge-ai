@@ -1,5 +1,5 @@
-import { Context, Next } from "hono";
-import { HTTPException } from "hono/http-exception";
+import { Context, Next } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 
 export interface RateLimitEnv {
   RATE_LIMIT_KV: KVNamespace;
@@ -21,7 +21,7 @@ export function rateLimit(config: RateLimitConfig) {
   const {
     windowMs,
     max,
-    keyPrefix = "rl",
+    keyPrefix = 'rl',
     skipSuccessfulRequests = false,
     skipFailedRequests = false,
   } = config;
@@ -34,7 +34,7 @@ export function rateLimit(config: RateLimitConfig) {
     const windowStart = now - windowMs;
 
     // Get current rate limit data
-    const data = await c.env.RATE_LIMIT_KV?.get(key, "json");
+    const data = await c.env.RATE_LIMIT_KV?.get(key, 'json');
     const requests: number[] = (data as number[]) || [];
 
     // Filter out requests outside the current window
@@ -46,10 +46,10 @@ export function rateLimit(config: RateLimitConfig) {
       const resetTime = oldestRequest + windowMs;
       const retryAfter = Math.ceil((resetTime - now) / 1000);
 
-      c.header("X-RateLimit-Limit", max.toString());
-      c.header("X-RateLimit-Remaining", "0");
-      c.header("X-RateLimit-Reset", new Date(resetTime).toISOString());
-      c.header("Retry-After", retryAfter.toString());
+      c.header('X-RateLimit-Limit', max.toString());
+      c.header('X-RateLimit-Remaining', '0');
+      c.header('X-RateLimit-Reset', new Date(resetTime).toISOString());
+      c.header('Retry-After', retryAfter.toString());
 
       throw new HTTPException(429, {
         message: `Rate limit exceeded. Try again in ${retryAfter} seconds.`,
@@ -65,12 +65,9 @@ export function rateLimit(config: RateLimitConfig) {
     });
 
     // Set rate limit headers
-    c.header("X-RateLimit-Limit", max.toString());
-    c.header("X-RateLimit-Remaining", (max - recentRequests.length).toString());
-    c.header(
-      "X-RateLimit-Reset",
-      new Date(now + windowMs).toISOString()
-    );
+    c.header('X-RateLimit-Limit', max.toString());
+    c.header('X-RateLimit-Remaining', (max - recentRequests.length).toString());
+    c.header('X-RateLimit-Reset', new Date(now + windowMs).toISOString());
 
     // Execute request
     await next();
@@ -78,8 +75,7 @@ export function rateLimit(config: RateLimitConfig) {
     // Remove request from count if configured
     const status = c.res.status;
     const shouldRemove =
-      (skipSuccessfulRequests && status < 400) ||
-      (skipFailedRequests && status >= 400);
+      (skipSuccessfulRequests && status < 400) || (skipFailedRequests && status >= 400);
 
     if (shouldRemove) {
       const updatedRequests = recentRequests.slice(0, -1);
@@ -95,23 +91,23 @@ export function rateLimit(config: RateLimitConfig) {
  */
 function getIdentifier(c: Context): string {
   // Try to get user ID from auth
-  const user = c.get("user");
+  const user = c.get('user');
   if (user && user.userId) {
     return `user:${user.userId}`;
   }
 
   // Try to get API key
-  const apiKey = c.req.header("X-API-Key");
+  const apiKey = c.req.header('X-API-Key');
   if (apiKey) {
     return `apikey:${apiKey.substring(0, 16)}`;
   }
 
   // Fall back to IP address
   const ip =
-    c.req.header("CF-Connecting-IP") ||
-    c.req.header("X-Forwarded-For") ||
-    c.req.header("X-Real-IP") ||
-    "unknown";
+    c.req.header('CF-Connecting-IP') ||
+    c.req.header('X-Forwarded-For') ||
+    c.req.header('X-Real-IP') ||
+    'unknown';
 
   return `ip:${ip}`;
 }
@@ -129,8 +125,8 @@ export function tierRateLimit() {
   };
 
   return async (c: Context<{ Bindings: RateLimitEnv }>, next: Next) => {
-    const user = c.get("user");
-    const tier = user?.tier || "free";
+    const user = c.get('user');
+    const tier = user?.tier || 'free';
     const config = limits[tier];
 
     const rateLimiter = rateLimit({
@@ -149,7 +145,7 @@ export function ipRateLimit(windowMs = 60000, max = 20) {
   return rateLimit({
     windowMs,
     max,
-    keyPrefix: "ip-rl",
+    keyPrefix: 'ip-rl',
   });
 }
 
@@ -163,7 +159,7 @@ export function endpointRateLimit(endpoint: string, windowMs = 60000, max = 30) 
     const now = Date.now();
     const windowStart = now - windowMs;
 
-    const data = await c.env.RATE_LIMIT_KV?.get(key, "json");
+    const data = await c.env.RATE_LIMIT_KV?.get(key, 'json');
     const requests: number[] = (data as number[]) || [];
     const recentRequests = requests.filter((timestamp) => timestamp > windowStart);
 
