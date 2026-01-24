@@ -17,7 +17,7 @@
     "hono": "^4.11.4",
     "openai": "^4.0.0",
     "postgres": "^3.4.0",
-    "zod": "^3.23.8"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.0.0",
