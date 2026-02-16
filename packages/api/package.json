@@ -13,7 +13,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "agents": "^0.2.8",
+    "agents": "^0.4.1",
     "hono": "^4.11.4",
     "openai": "^4.0.0",
     "postgres": "^3.4.0",
