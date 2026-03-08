@@ -5,15 +5,17 @@
 When writing tests for SecretForge AI, **DO NOT** use mock API keys that match real secret patterns. GitHub's secret scanning will flag them as potential security vulnerabilities.
 
 ### ❌ Bad Practice
+
 ```typescript
 const TEST_ENV = {
-  OPENAI_API_KEY: 'sk-test-key',  // Matches OpenAI pattern!
-  ANTHROPIC_API_KEY: 'sk-ant-test-key',  // Matches Anthropic pattern!
-  GITHUB_TOKEN: 'ghp_test123',  // Matches GitHub token pattern!
+  OPENAI_API_KEY: 'sk-test-key', // Matches OpenAI pattern!
+  ANTHROPIC_API_KEY: 'sk-ant-test-key', // Matches Anthropic pattern!
+  GITHUB_TOKEN: 'ghp_test123', // Matches GitHub token pattern!
 };
 ```
 
 ### ✅ Good Practice
+
 ```typescript
 const TEST_ENV = {
   OPENAI_API_KEY: 'TEST_OPENAI_KEY_NOT_REAL',
