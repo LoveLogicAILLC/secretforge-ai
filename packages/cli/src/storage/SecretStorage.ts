@@ -186,6 +186,8 @@ export class SQLiteSecretStorage implements SecretStorage {
       'get_secret_by_name',
       'SELECT * FROM secrets WHERE name = ? AND project = ? AND environment = ?'
     );
+      'SELECT * FROM secrets WHERE name = ? AND project = ? AND environment = ?'
+    );
     const row = stmt.get(name, project, environment);
 
     if (!row) {
