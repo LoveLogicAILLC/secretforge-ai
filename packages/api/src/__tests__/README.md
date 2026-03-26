@@ -10,7 +10,7 @@ When writing tests for SecretForge AI, **DO NOT** use mock API keys that match r
 const TEST_ENV = {
   OPENAI_API_KEY: 'sk-test-key', // Matches OpenAI pattern!
   ANTHROPIC_API_KEY: 'sk-ant-test-key', // Matches Anthropic pattern!
-  GITHUB_TOKEN: 'ghp_test123', // Matches GitHub token pattern!
+  GITHUB_TOKEN: 'TEST_GITHUB_TOKEN_NOT_REAL', // Matches GitHub token pattern!
 };
 ```
 
