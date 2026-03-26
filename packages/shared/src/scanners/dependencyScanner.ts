@@ -80,7 +80,6 @@ const SERVICE_PATTERNS: ServicePattern[] = [
   { name: 'vercel', patterns: ['@vercel/'], confidence: 0.9 },
   { name: 'cloudflare', patterns: ['@cloudflare/', 'cloudflare'], confidence: 0.9 },
 ];
-
 /**
  * Pre-computed lowercase patterns for faster matching
  * Computed once at module load time
@@ -276,7 +275,6 @@ export function scanRustDependencies(cargoTomlContent: string): DependencyScanRe
 
 /**
  * Core service detection logic
- * Optimized: Single pass through dependencies, pre-computed lowercase patterns
  */
 function detectServices(dependencies: Record<string, string>): {
   services: string[];
@@ -324,7 +322,6 @@ function detectNodePackageManager(packageJson: any): string {
 
 /**
  * Universal scanner - auto-detect language and scan
- * Optimized: Early exit for empty content, better error handling
  */
 export function scanDependencies(
   content: string,
