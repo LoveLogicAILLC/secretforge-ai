@@ -70,7 +70,7 @@ describe('Authentication', () => {
   it('should accept requests with valid API key', async () => {
     const req = new Request('http://localhost/api/secrets', {
       headers: {
-        'X-API-Key': 'sf_test_api_key_12345678901234567890',
+        'X-API-Key': 'TEST_SECRETFORGE_API_KEY_NOT_REAL',
       },
     });
     const res = await app.fetch(req, TEST_ENV);
