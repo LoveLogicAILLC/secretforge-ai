@@ -342,7 +342,7 @@ export function scanDependencies(
     // Auto-detect if not specified
     if (!fileType) {
       const trimmed = content.trim();
-      if (trimmed.startsWith("{") && content.includes("dependencies")) {
+      if (trimmed.startsWith('{') && content.includes('dependencies')) {
         // Looks like JSON
         const json = JSON.parse(content);
         if (json.dependencies || json.devDependencies) {
