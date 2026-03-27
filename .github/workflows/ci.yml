@@ -19,7 +19,7 @@ jobs:
 
       - uses: pnpm/action-setup@v5
         with:
-          version: 8
+          version: 8.15.0
 
       - uses: actions/setup-node@v6
         with:
@@ -27,7 +27,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Run linter
         run: pnpm lint
@@ -40,7 +40,7 @@ jobs:
 
       - uses: pnpm/action-setup@v5
         with:
-          version: 8
+          version: 8.15.0
 
       - uses: actions/setup-node@v6
         with:
@@ -48,7 +48,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Type check
         run: pnpm turbo build --dry-run
@@ -61,7 +61,7 @@ jobs:
 
       - uses: pnpm/action-setup@v5
         with:
-          version: 8
+          version: 8.15.0
 
       - uses: actions/setup-node@v6
         with:
@@ -69,7 +69,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Run tests
         run: pnpm test
@@ -91,7 +91,7 @@ jobs:
 
       - uses: pnpm/action-setup@v5
         with:
-          version: 8
+          version: 8.15.0
 
       - uses: actions/setup-node@v6
         with:
@@ -99,7 +99,7 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
       - name: Build all packages
         run: pnpm build
