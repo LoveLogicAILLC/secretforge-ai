@@ -1,10 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   CheckCircle2,
   Shield,
@@ -19,6 +14,12 @@ import {
   Code,
   GitPullRequest,
 } from 'lucide-react';
+import { type ChangeEvent, useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 export default function LandingPage() {
   const [email, setEmail] = useState('');
@@ -126,7 +127,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold mb-4 text-white">
-              You're One Commit Away From Disaster
+              You&apos;re One Commit Away From Disaster
             </h2>
             <p className="text-xl text-slate-400 max-w-3xl mx-auto">
               Every day, developers accidentally expose API keys on GitHub. The average cost?{' '}
@@ -184,7 +185,7 @@ export default function LandingPage() {
             The AI That Protects Your Secrets
           </h2>
           <p className="text-xl text-slate-400">
-            Built with Cloudflare's edge AI and Model Context Protocol
+            Built with Cloudflare&apos;s edge AI and Model Context Protocol
           </p>
         </div>
 
@@ -266,7 +267,7 @@ export default function LandingPage() {
               placeholder="your@email.com"
               className="bg-slate-900/50 border-purple-700 text-white"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
             />
             <Button size="lg" className="bg-white text-purple-900 hover:bg-slate-100 font-bold">
               Get Early Access
