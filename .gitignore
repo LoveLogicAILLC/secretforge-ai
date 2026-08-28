@@ -61,3 +61,6 @@ temp/
 *.p12
 credentials.json
 service-account.json
+
+# Locally generated scanner fixtures (contain credential-shaped strings by design)
+packages/lsp-server/test/sample.local.*
