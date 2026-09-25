@@ -1,6 +1,7 @@
 {
   "name": "secretforge-api",
   "main": "src/index.ts",
+  "workers_dev": true,
   "compatibility_date": "2025-03-07",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
@@ -10,8 +11,11 @@
   "kv_namespaces": [
     {
       "binding": "SECRETS_VAULT",
-      "id": "your-kv-namespace-id",
-      "preview_id": "your-preview-kv-namespace-id"
+      "id": "b71460ab4b6447b2924b56080365d3c4"
+    },
+    {
+      "binding": "RATE_LIMIT_KV",
+      "id": "f044969427384382b43af253ec64e41c"
     }
   ],
   "d1_databases": [
@@ -25,12 +29,6 @@
     {
       "binding": "VECTOR_DB",
       "index_name": "api-docs-index"
-    }
-  ],
-  "hyperdrive": [
-    {
-      "binding": "HYPERDRIVE",
-      "id": "your-hyperdrive-id"
     }
   ],
   "durable_objects": {

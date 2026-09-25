@@ -1,6 +1,6 @@
 name = "secretforge-api"
 main = "src/index.ts"
-compatibility_date = "2024-09-23"
+workers_dev = true
 node_compat = true
 
 [observability]
@@ -15,22 +15,15 @@ database_id = "83cce8ad-9f2e-404f-9ada-943849e14efe"
 # KV for encrypted secrets storage
 [[kv_namespaces]]
 binding = "SECRETS_VAULT"
-id = "YOUR_KV_NAMESPACE_ID"
-
+id = "b71460ab4b6447b2924b56080365d3c4"
 # KV for rate limiting
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"
-id = "YOUR_RATE_LIMIT_KV_ID"
-
+id = "f044969427384382b43af253ec64e41c"
 # Vectorize for API documentation search
 [[vectorize]]
 binding = "VECTOR_DB"
 index_name = "api-docs-index"
-
-# Hyperdrive for PostgreSQL connections (optional)
-[[hyperdrive]]
-binding = "HYPERDRIVE"
-id = "YOUR_HYPERDRIVE_ID"
 
 # Agents for stateful AI workflows
 [[agents]]
