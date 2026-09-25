@@ -46,8 +46,6 @@
     }
   ],
   "vars": {
-    "OPENAI_API_KEY": "",
-    "ANTHROPIC_API_KEY": "",
-    "ENCRYPTION_KEY": ""
+    "ENVIRONMENT": "production"
   }
 }

@@ -33,12 +33,6 @@ name = "secret-agent"
 [vars]
 ENVIRONMENT = "development"
 
-# Secrets (set via wrangler secret put)
-# OPENAI_API_KEY
-# ANTHROPIC_API_KEY
-# ENCRYPTION_KEY (32 bytes base64)
-# JWT_SECRET (32+ bytes base64)
-# API_KEY_SALT (32 bytes base64)
 
 [env.production]
 name = "secretforge-api-production"
