@@ -1,8 +1,7 @@
 import chalk from 'chalk';
 import ora from 'ora';
 import { ConfigManager } from '../cli/ConfigManager.js';
-import { SQLiteSecretStorage } from '../storage/SecretStorage.js';
-import { DefaultCryptoProvider } from '../crypto/CryptoProvider.js';
+import { openVault } from '../cli/vault.js';
 
 /**
  * List secrets without exposing raw values
@@ -25,8 +24,7 @@ export async function listCommand(options: {
 
   try {
     // Initialize storage
-    const cryptoProvider = new DefaultCryptoProvider();
-    const storage = new SQLiteSecretStorage(configManager.getDatabasePath(config), cryptoProvider);
+    const storage = openVault(configManager, config);
 
     // Parse options
     const listOptions: any = {

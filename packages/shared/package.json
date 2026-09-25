@@ -17,5 +17,18 @@
     "@types/node": "^20.0.0",
     "typescript": "^5.9.3",
     "vitest": "^1.0.0"
-  }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./scanner": {
+      "types": "./dist/security/secretDetector.d.ts",
+      "import": "./dist/security/secretDetector.js"
+    }
+  },
+  "files": [
+    "dist"
+  ]
 }

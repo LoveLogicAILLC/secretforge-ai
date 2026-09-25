@@ -1,8 +1,8 @@
 import chalk from 'chalk';
 import ora from 'ora';
 import inquirer from 'inquirer';
-import { ConfigManager } from '../cli/ConfigManager.js';
-import { mkdir, access } from 'fs/promises';
+import { ConfigManager, assertProjectName, defaultKeyPath } from '../cli/ConfigManager.js';
+import { mkdir, access, writeFile, chmod } from 'fs/promises';
 import { dirname } from 'path';
 import { generateEncryptionKey } from '../crypto/CryptoProvider.js';
 
@@ -36,7 +36,15 @@ export async function initCommand(): Promise<void> {
       name: 'project',
       message: 'Project name:',
       default: process.cwd().split('/').pop() || 'my-project',
-      validate: (input: string) => input.trim().length > 0 || 'Project name is required',
+      filter: (input: string) => input.trim(),
+      validate: (input: string) => {
+        try {
+          assertProjectName(input.trim());
+          return true;
+        } catch (e) {
+          return (e as Error).message;
+        }
+      },
     },
     {
       type: 'list',
@@ -50,27 +58,37 @@ export async function initCommand(): Promise<void> {
   const spinner = ora('Initializing SecretForge...').start();
 
   try {
-    // Create configuration
-    const config = await configManager.init(answers.project, answers.environment);
-
-    // Create database directory
-    const dbDir = dirname(config.databasePath!);
-    try {
-      await access(dbDir);
-    } catch {
-      await mkdir(dbDir, { recursive: true });
+    // Master key: honour SECRETFORGE_ENCRYPTION_KEY if set, otherwise generate a
+    // per-project key file (0600) instead of printing the key to the terminal,
+    // where it would land in scrollback, shell recordings and CI logs.
+    let keyPath: string | undefined;
+    if (!process.env.SECRETFORGE_ENCRYPTION_KEY) {
+      keyPath = defaultKeyPath(answers.project);
+      const keyDir = dirname(keyPath);
+      await mkdir(keyDir, { recursive: true, mode: 0o700 });
+      let exists = true;
+      try {
+        await access(keyPath);
+      } catch {
+        exists = false;
+      }
+      if (!exists) {
+        await writeFile(keyPath, (await generateEncryptionKey()) + '\n', { mode: 0o600, flag: 'wx' });
+      }
+      if (process.platform !== 'win32') await chmod(keyPath, 0o600);
     }
 
-    // Generate encryption key if not exists
-    if (!process.env.SECRETFORGE_ENCRYPTION_KEY) {
-      const encryptionKey = await generateEncryptionKey();
-      spinner.info(
-        `Generated encryption key. Add this to your environment:\n\n${chalk.cyan(
-          `export SECRETFORGE_ENCRYPTION_KEY="${encryptionKey}"`
-        )}\n`
-      );
+    const config = await configManager.init(answers.project, answers.environment, keyPath);
+
+    const dbDir = dirname(config.databasePath!);
+    await mkdir(dbDir, { recursive: true, mode: 0o700 });
+
+    if (keyPath) {
+      spinner.info(`Master key stored at ${chalk.cyan(keyPath)} (mode 600)`);
       console.log(
-        chalk.yellow('⚠️  Store this key securely! You will need it to decrypt your secrets.\n')
+        chalk.yellow(
+          '⚠️  Back this file up somewhere safe (e.g. your password manager). Without it your secrets cannot be decrypted.\n'
+        )
       );
     }
 

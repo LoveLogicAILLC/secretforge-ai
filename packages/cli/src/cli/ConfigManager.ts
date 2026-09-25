@@ -23,6 +23,24 @@ const DEFAULT_CONFIG: SecretForgeConfig = {
 };
 
 /**
+ * Project names become file names under ~/.secretforge, so they must not be able
+ * to contain path separators or `..` (e.g. a project named "../../.ssh/x").
+ */
+export function assertProjectName(project: string): void {
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/.test(project) || project.includes('..')) {
+    throw new Error(
+      'Project name may only contain letters, digits, ".", "_" and "-" (and must start with a letter or digit)'
+    );
+  }
+}
+
+/** Default location for a project's master key file. */
+export function defaultKeyPath(project: string): string {
+  assertProjectName(project);
+  return join(homedir(), '.secretforge', 'keys', `${project}.key`);
+}
+
+/**
  * Configuration manager for SecretForge
  */
 export class ConfigManager {
@@ -50,7 +68,9 @@ export class ConfigManager {
   async load(): Promise<SecretForgeConfig> {
     try {
       const content = await readFile(this.configPath, 'utf-8');
-      return JSON.parse(content);
+      const config = JSON.parse(content) as SecretForgeConfig;
+      assertProjectName(config.project);
+      return config;
     } catch (error) {
       throw new Error(`Failed to load configuration from ${this.configPath}: ${error}`);
     }
@@ -70,12 +90,18 @@ export class ConfigManager {
   /**
    * Initialize new configuration
    */
-  async init(project: string, environment: string = 'dev'): Promise<SecretForgeConfig> {
+  async init(
+    project: string,
+    environment: string = 'dev',
+    encryptionKeyPath?: string
+  ): Promise<SecretForgeConfig> {
+    assertProjectName(project);
     const config: SecretForgeConfig = {
       ...DEFAULT_CONFIG,
       project,
       defaultEnvironment: environment,
       databasePath: join(homedir(), '.secretforge', `${project}.db`),
+      ...(encryptionKeyPath ? { encryptionKeyPath } : {}),
     };
 
     await this.save(config);

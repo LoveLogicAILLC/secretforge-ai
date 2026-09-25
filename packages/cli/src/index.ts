@@ -6,6 +6,8 @@ import ora from 'ora';
 import inquirer from 'inquirer';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
+import { parseDotenv, serializeEnvLine } from './format/dotenv.js';
+import { writePrivateFile } from './cli/vault.js';
 
 interface CLIContext {
   projectPath: string;
@@ -13,6 +15,8 @@ interface CLIContext {
   apiEndpoint: string;
   userId: string;
 }
+
+const AI_CONTEXT_FILE = '.secretforge-ai.json';
 
 const program = new Command();
 const ollama = new Ollama({ host: 'http://localhost:11434' });
@@ -60,7 +64,9 @@ program
       }
     }
 
-    await writeFile(join(process.cwd(), '.secretforge.json'), JSON.stringify(context, null, 2));
+    // Written to its own file: `.secretforge.json` belongs to the `sf` vault CLI and
+    // overwriting it here would break `sf add/list/inject`.
+    await writeFile(join(process.cwd(), AI_CONTEXT_FILE), JSON.stringify(context, null, 2));
 
     console.log(chalk.green('\n✅ SecretForge initialized successfully!'));
   });
@@ -282,7 +288,7 @@ Respond with actionable advice and offer to execute commands.`,
 
 async function loadContext(): Promise<CLIContext> {
   try {
-    const config = await readFile(join(process.cwd(), '.secretforge.json'), 'utf-8');
+    const config = await readFile(join(process.cwd(), AI_CONTEXT_FILE), 'utf-8');
     return JSON.parse(config);
   } catch {
     return analyzeCurrentProject();
@@ -291,18 +297,16 @@ async function loadContext(): Promise<CLIContext> {
 
 async function updateEnvFile(key: string, value: string) {
   const envPath = join(process.cwd(), '.env.local');
-
+  let existing = '';
   try {
-    let envContent = await readFile(envPath, 'utf-8');
-    if (envContent.includes(key)) {
-      envContent = envContent.replace(new RegExp(`${key}=.*`, 'g'), `${key}=${value}`);
-    } else {
-      envContent += `\n${key}=${value}`;
-    }
-    await writeFile(envPath, envContent);
+    existing = await readFile(envPath, 'utf-8');
   } catch {
-    await writeFile(envPath, `${key}=${value}\n`);
+    // new file
   }
+  const vars = parseDotenv(existing);
+  vars.set(key, value);
+  const body = [...vars.entries()].map(([k, v]) => serializeEnvLine(k, v)).join('\n') + '\n';
+  await writePrivateFile(envPath, body);
 }
 
 program.parse();

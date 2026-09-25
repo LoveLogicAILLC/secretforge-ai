@@ -2,8 +2,15 @@ import chalk from 'chalk';
 import ora from 'ora';
 import inquirer from 'inquirer';
 import { ConfigManager } from '../cli/ConfigManager.js';
-import { SQLiteSecretStorage } from '../storage/SecretStorage.js';
-import { DefaultCryptoProvider } from '../crypto/CryptoProvider.js';
+import { openVault } from '../cli/vault.js';
+import { validateSecretName } from '../format/dotenv.js';
+
+interface AddAnswers {
+  name: string;
+  value: string;
+  environment: string;
+  tags: string;
+}
 
 /**
  * Add a new secret interactively
@@ -23,13 +30,15 @@ export async function addCommand(
   const config = await configManager.load();
 
   // Gather secret details
-  const answers = await inquirer.prompt([
+  const answers = await inquirer.prompt<AddAnswers>([
     {
       type: 'input',
       name: 'name',
       message: 'Secret name:',
       default: name,
-      validate: (input: string) => input.trim().length > 0 || 'Secret name is required',
+      filter: (input: string) => input.trim(),
+      validate: (input: string) =>
+        input.trim().length > 0 ? validateSecretName(input.trim()) : 'Secret name is required',
     },
     {
       type: 'password',
@@ -51,14 +60,13 @@ export async function addCommand(
       message: 'Tags (comma-separated):',
       default: options.tags || '',
     },
-  ]);
+  ] as any);
 
   const spinner = ora('Adding secret...').start();
 
   try {
     // Initialize storage
-    const cryptoProvider = new DefaultCryptoProvider();
-    const storage = new SQLiteSecretStorage(configManager.getDatabasePath(config), cryptoProvider);
+    const storage = openVault(configManager, config);
 
     // Check if secret already exists
     const existing = await storage.getSecretByName(
