@@ -1,90 +1,121 @@
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+import { readFileSync, statSync } from 'node:fs';
+
 /**
- * CryptoProvider interface for encryption and decryption operations
+ * CryptoProvider interface for encryption and decryption operations.
+ *
+ * `aad` (additional authenticated data) binds a ciphertext to its context
+ * (e.g. project/environment/name). A ciphertext copied onto a different
+ * record will fail to decrypt instead of silently yielding another secret.
  */
 export interface CryptoProvider {
-  /**
-   * Encrypt a plaintext value
-   * @param plaintext - The plaintext value to encrypt
-   * @returns The encrypted value as a base64-encoded string
-   */
-  encrypt(plaintext: string): Promise<string>;
+  encrypt(plaintext: string, aad?: string): Promise<string>;
+  decrypt(encryptedValue: string, aad?: string): Promise<string>;
+}
 
-  /**
-   * Decrypt an encrypted value
-   * @param encryptedValue - The encrypted value as a base64-encoded string
-   * @returns The decrypted plaintext value
-   */
-  decrypt(encryptedValue: string): Promise<string>;
+const KEY_BYTES = 32;
+const IV_BYTES = 12;
+const TAG_BYTES = 16;
+const V2_PREFIX = 'sf2.';
+const BASE64_RE = /^[A-Za-z0-9+/]+={0,2}$/;
+
+/**
+ * Strictly decode a base64 AES-256 key. Node's base64 decoder silently skips
+ * invalid characters, so a typo'd key could otherwise decode to 32 bytes of
+ * the wrong material.
+ */
+export function parseEncryptionKey(encoded: string): Buffer {
+  const trimmed = encoded.trim();
+  if (!BASE64_RE.test(trimmed)) {
+    throw new Error('Encryption key must be base64 encoded');
+  }
+  const key = Buffer.from(trimmed, 'base64');
+  if (key.length !== KEY_BYTES) {
+    throw new Error('Encryption key must be 32 bytes (base64 encoded)');
+  }
+  return key;
 }
 
 /**
- * Default CryptoProvider implementation using AES-256-GCM
- * Uses environment variable SECRETFORGE_ENCRYPTION_KEY for the encryption key
+ * Resolve the master key: explicit value → SECRETFORGE_ENCRYPTION_KEY → key file.
+ * Key files must not be readable by group/other.
  */
-export class DefaultCryptoProvider implements CryptoProvider {
-  private encryptionKey: string;
-
-  constructor(encryptionKey?: string) {
-    this.encryptionKey = encryptionKey || process.env.SECRETFORGE_ENCRYPTION_KEY || '';
-
-    if (!this.encryptionKey) {
+export function resolveEncryptionKey(explicit?: string, keyPath?: string): string {
+  if (explicit) return explicit;
+  if (process.env.SECRETFORGE_ENCRYPTION_KEY) return process.env.SECRETFORGE_ENCRYPTION_KEY;
+  if (keyPath) {
+    const st = statSync(keyPath);
+    if (process.platform !== 'win32' && (st.mode & 0o077) !== 0) {
       throw new Error(
-        'Encryption key not provided. Set SECRETFORGE_ENCRYPTION_KEY environment variable or pass key to constructor.'
+        `Refusing to use key file ${keyPath}: permissions are too open. Run: chmod 600 "${keyPath}"`
       );
     }
+    return readFileSync(keyPath, 'utf8').trim();
+  }
+  return '';
+}
 
-    // Ensure key is 32 bytes for AES-256
-    if (Buffer.from(this.encryptionKey, 'base64').length !== 32) {
-      throw new Error('Encryption key must be 32 bytes (base64 encoded)');
+/**
+ * AES-256-GCM provider.
+ *
+ * Format v2: `sf2.<base64(iv|tag|ciphertext)>`, bound to optional AAD.
+ * Legacy v1 (base64 JSON {iv, authTag, data}, no AAD) is still decrypted so
+ * existing vaults keep working; all new writes use v2.
+ */
+export class DefaultCryptoProvider implements CryptoProvider {
+  private readonly key: Buffer;
+
+  constructor(encryptionKey?: string, keyPath?: string) {
+    const resolved = resolveEncryptionKey(encryptionKey, keyPath);
+    if (!resolved) {
+      throw new Error(
+        'Encryption key not provided. Set SECRETFORGE_ENCRYPTION_KEY, configure encryptionKeyPath, or pass key to constructor.'
+      );
     }
+    this.key = parseEncryptionKey(resolved);
   }
 
-  async encrypt(plaintext: string): Promise<string> {
-    const crypto = await import('crypto');
-
-    // Generate random IV (12 bytes for GCM)
-    const iv = crypto.randomBytes(12);
-
-    // Create cipher
-    const keyBuffer = Buffer.from(this.encryptionKey, 'base64');
-    const cipher = crypto.createCipheriv('aes-256-gcm', keyBuffer, iv);
-
-    // Encrypt
-    let encrypted = cipher.update(plaintext, 'utf8', 'base64');
-    encrypted += cipher.final('base64');
-
-    // Get auth tag
-    const authTag = cipher.getAuthTag();
-
-    // Combine IV, auth tag, and encrypted data
-    const result = {
-      iv: iv.toString('base64'),
-      authTag: authTag.toString('base64'),
-      data: encrypted,
-    };
-
-    return Buffer.from(JSON.stringify(result)).toString('base64');
+  async encrypt(plaintext: string, aad?: string): Promise<string> {
+    const iv = randomBytes(IV_BYTES);
+    const cipher = createCipheriv('aes-256-gcm', this.key, iv, { authTagLength: TAG_BYTES });
+    if (aad !== undefined) cipher.setAAD(Buffer.from(aad, 'utf8'));
+    const ct = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+    const tag = cipher.getAuthTag();
+    return V2_PREFIX + Buffer.concat([iv, tag, ct]).toString('base64');
   }
 
-  async decrypt(encryptedValue: string): Promise<string> {
-    const crypto = await import('crypto');
+  async decrypt(encryptedValue: string, aad?: string): Promise<string> {
+    if (encryptedValue.startsWith(V2_PREFIX)) {
+      const raw = Buffer.from(encryptedValue.slice(V2_PREFIX.length), 'base64');
+      if (raw.length < IV_BYTES + TAG_BYTES) throw new Error('Ciphertext is truncated');
+      const iv = raw.subarray(0, IV_BYTES);
+      const tag = raw.subarray(IV_BYTES, IV_BYTES + TAG_BYTES);
+      const ct = raw.subarray(IV_BYTES + TAG_BYTES);
+      const decipher = createDecipheriv('aes-256-gcm', this.key, iv, { authTagLength: TAG_BYTES });
+      if (aad !== undefined) decipher.setAAD(Buffer.from(aad, 'utf8'));
+      decipher.setAuthTag(tag);
+      return Buffer.concat([decipher.update(ct), decipher.final()]).toString('utf8');
+    }
+    return this.decryptLegacy(encryptedValue);
+  }
 
-    // Parse encrypted data
+  private decryptLegacy(encryptedValue: string): string {
     const parsed = JSON.parse(Buffer.from(encryptedValue, 'base64').toString('utf8'));
     const { iv, authTag, data } = parsed;
+    const tag = Buffer.from(authTag, 'base64');
+    // Without an explicit tag length, GCM accepts truncated tags (down to 4 bytes),
+    // which makes forgery far cheaper. Pin it to the full 16 bytes.
+    if (tag.length !== TAG_BYTES) throw new Error('Invalid authentication tag length');
+    const decipher = createDecipheriv('aes-256-gcm', this.key, Buffer.from(iv, 'base64'), {
+      authTagLength: TAG_BYTES,
+    });
+    decipher.setAuthTag(tag);
+    return decipher.update(data, 'base64', 'utf8') + decipher.final('utf8');
+  }
 
-    // Create decipher
-    const keyBuffer = Buffer.from(this.encryptionKey, 'base64');
-    const decipher = crypto.createDecipheriv('aes-256-gcm', keyBuffer, Buffer.from(iv, 'base64'));
-
-    // Set auth tag
-    decipher.setAuthTag(Buffer.from(authTag, 'base64'));
-
-    // Decrypt
-    let decrypted = decipher.update(data, 'base64', 'utf8');
-    decrypted += decipher.final('utf8');
-
-    return decrypted;
+  /** True if the value is stored in the legacy (unbound) format. */
+  static isLegacy(encryptedValue: string): boolean {
+    return !encryptedValue.startsWith(V2_PREFIX);
   }
 }
 
@@ -93,6 +124,5 @@ export class DefaultCryptoProvider implements CryptoProvider {
  * @returns A base64-encoded 32-byte encryption key
  */
 export async function generateEncryptionKey(): Promise<string> {
-  const crypto = await import('crypto');
-  return crypto.randomBytes(32).toString('base64');
+  return randomBytes(KEY_BYTES).toString('base64');
 }

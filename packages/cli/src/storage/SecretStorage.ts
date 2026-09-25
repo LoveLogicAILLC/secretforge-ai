@@ -1,4 +1,16 @@
-import { CryptoProvider } from '../crypto/CryptoProvider.js';
+import Database from 'better-sqlite3';
+import { randomUUID } from 'node:crypto';
+import { chmodSync, existsSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { CryptoProvider, DefaultCryptoProvider } from '../crypto/CryptoProvider.js';
+
+/**
+ * Additional authenticated data that binds a ciphertext to the record it belongs to.
+ * Swapping `value_encrypted` between rows (e.g. prod <-> dev) makes decryption fail.
+ */
+export function secretAAD(project: string, environment: string, name: string): string {
+  return JSON.stringify(['secretforge/v2', project, environment, name]);
+}
 
 /**
  * Secret metadata and encrypted value
@@ -79,9 +91,9 @@ export interface SecretStorage {
  * Optimized: Cached prepared statements for better performance
  */
 export class SQLiteSecretStorage implements SecretStorage {
-  private db: any;
+  private db!: Database.Database;
   private cryptoProvider: CryptoProvider;
-  private preparedStatements: Map<string, any>; // Cache for prepared statements
+  private preparedStatements: Map<string, Database.Statement>; // Cache for prepared statements
 
   constructor(dbPath: string, cryptoProvider: CryptoProvider) {
     this.cryptoProvider = cryptoProvider;
@@ -90,9 +102,16 @@ export class SQLiteSecretStorage implements SecretStorage {
   }
 
   private initDatabase(dbPath: string): void {
-    // Use dynamic import for ES module compatibility
-    const Database = require('better-sqlite3');
+    const isFile = dbPath !== ':memory:' && !dbPath.startsWith('file:');
+    if (isFile) {
+      // Vault directory and file must be private to the current user.
+      const dir = dirname(dbPath);
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
+    }
     this.db = new Database(dbPath);
+    if (isFile && process.platform !== 'win32') {
+      chmodSync(dbPath, 0o600);
+    }
     // Create secrets table
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS secrets (
@@ -118,18 +137,21 @@ export class SQLiteSecretStorage implements SecretStorage {
   /**
    * Get or create a prepared statement (cached)
    */
-  private getPreparedStatement(key: string, sql: string): any {
+  private getPreparedStatement(key: string, sql: string): Database.Statement {
     if (!this.preparedStatements.has(key)) {
       this.preparedStatements.set(key, this.db.prepare(sql));
     }
-    return this.preparedStatements.get(key);
+    return this.preparedStatements.get(key)!;
   }
 
   async addSecret(options: AddSecretOptions): Promise<Secret> {
     const { name, value, project, environment, tags = [] } = options;
 
     // Encrypt the value
-    const value_encrypted = await this.cryptoProvider.encrypt(value);
+    const value_encrypted = await this.cryptoProvider.encrypt(
+      value,
+      secretAAD(project, environment, name)
+    );
 
     // Generate ID and timestamps
     const id = this.generateId();
@@ -172,7 +194,7 @@ export class SQLiteSecretStorage implements SecretStorage {
       'get_secret',
       'SELECT * FROM secrets WHERE id = ?'
     );
-    const row = stmt.get(id);
+    const row = stmt.get(id) as any;
 
     if (!row) {
       return null;
@@ -186,7 +208,7 @@ export class SQLiteSecretStorage implements SecretStorage {
       'get_secret_by_name',
       'SELECT * FROM secrets WHERE name = ? AND project = ? AND environment = ?'
     );
-    const row = stmt.get(name, project, environment);
+    const row = stmt.get(name, project, environment) as any;
 
     if (!row) {
       return null;
@@ -209,33 +231,31 @@ export class SQLiteSecretStorage implements SecretStorage {
       params.push(options.environment);
     }
 
-    // Optimize tag filtering using SQL JSON functions
-    // Note: SQLite JSON support varies. Using more precise LIKE pattern to avoid partial matches
+    // Exact tag match via SQLite JSON1. (The previous LIKE-based matching treated
+    // `%` and `_` in tag names as wildcards, so a tag of "%" matched everything.)
     if (options.tags && options.tags.length > 0) {
-      // Build SQL to check if any of the requested tags exist in the JSON array
-      // Using pattern: ["tag"] or ,"tag", or ,"tag"] to ensure exact match
-      const tagConditions = options.tags.map(() => 
-        `(tags LIKE ? OR tags LIKE ? OR tags LIKE ?)`
-      ).join(' OR ');
-      query += ` AND (${tagConditions})`;
-      // Add patterns for: start of array, middle of array, end of array
-      options.tags.forEach(tag => {
-        params.push(`["${tag}"%`);  // Start of array: ["tag"
-        params.push(`%,"${tag}",%`); // Middle: ,"tag",
-        params.push(`%,"${tag}"]`);  // End: ,"tag"]
-      });
+      const placeholders = options.tags.map(() => '?').join(', ');
+      query += ` AND EXISTS (SELECT 1 FROM json_each(secrets.tags) WHERE json_each.value IN (${placeholders}))`;
+      params.push(...options.tags);
     }
 
     query += ' ORDER BY created_at DESC';
 
     const stmt = this.db.prepare(query);
-    const rows = stmt.all(...params);
+    const rows = stmt.all(...params) as any[];
 
     return rows.map((row: any) => this.rowToSecret(row));
   }
 
   async updateSecret(id: string, value: string): Promise<Secret> {
-    const value_encrypted = await this.cryptoProvider.encrypt(value);
+    const current = await this.getSecret(id);
+    if (!current) {
+      throw new Error(`Secret ${id} not found`);
+    }
+    const value_encrypted = await this.cryptoProvider.encrypt(
+      value,
+      secretAAD(current.project, current.environment, current.name)
+    );
     const updated_at = new Date().toISOString();
 
     const stmt = this.getPreparedStatement(
@@ -262,7 +282,30 @@ export class SQLiteSecretStorage implements SecretStorage {
   }
 
   async decryptSecret(secret: Secret): Promise<string> {
-    return this.cryptoProvider.decrypt(secret.value_encrypted);
+    if (DefaultCryptoProvider.isLegacy(secret.value_encrypted)) {
+      // Pre-v2 rows were encrypted without AAD.
+      return this.cryptoProvider.decrypt(secret.value_encrypted);
+    }
+    return this.cryptoProvider.decrypt(
+      secret.value_encrypted,
+      secretAAD(secret.project, secret.environment, secret.name)
+    );
+  }
+
+  /**
+   * Re-encrypt any legacy (unbound) rows in the v2 format. Returns the number upgraded.
+   */
+  async upgradeLegacyEncryption(): Promise<number> {
+    const rows = this.db.prepare('SELECT * FROM secrets').all() as any[];
+    let upgraded = 0;
+    for (const row of rows) {
+      const secret = this.rowToSecret(row);
+      if (!DefaultCryptoProvider.isLegacy(secret.value_encrypted)) continue;
+      const plaintext = await this.cryptoProvider.decrypt(secret.value_encrypted);
+      await this.updateSecret(secret.id, plaintext);
+      upgraded++;
+    }
+    return upgraded;
   }
 
   private rowToSecret(row: any): Secret {
@@ -279,9 +322,7 @@ export class SQLiteSecretStorage implements SecretStorage {
   }
 
   private generateId(): string {
-    // Use crypto.randomUUID() for cryptographically secure IDs
-    const crypto = require('crypto');
-    return `sec_${crypto.randomUUID().replace(/-/g, '')}`;
+    return `sec_${randomUUID().replace(/-/g, '')}`;
   }
 
   close(): void {
