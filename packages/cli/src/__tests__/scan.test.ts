@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { scanCommand } from '../commands/scan';
@@ -144,7 +144,7 @@ describe('sf hook', () => {
   it('honours core.hooksPath (husky)', () => {
     git('config', 'core.hooksPath', '.husky');
     const r = installHook(dir);
-    expect(r.path).toBe(join(dir, '.husky', 'pre-commit'));
+    expect(realpathSync(r.path)).toBe(realpathSync(join(dir, '.husky', 'pre-commit')));
     expect(existsSync(r.path)).toBe(true);
   });
 });

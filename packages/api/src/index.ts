@@ -192,7 +192,7 @@ app.get('/api/secrets/:id', auth, tierRateLimit(), async (c) => {
   const secretData = await c.env.SECRETS_VAULT.get(`secret:${secretId}`);
 
   if (!secretData) {
-    return c.json({ error: 'Secret not found' }, 404);
+    throw new HTTPException(404, { message: 'Secret not found' });
   }
 
   const secret = JSON.parse(secretData);

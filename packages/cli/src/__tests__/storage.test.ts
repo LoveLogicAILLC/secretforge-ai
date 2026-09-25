@@ -227,6 +227,7 @@ describe('SecretStorage', () => {
         environment: 'dev',
       });
 
+      await new Promise(r => setTimeout(r, 10));
       const updated = await storage.updateSecret(secret.id, 'new-value');
 
       expect(updated.id).toBe(secret.id);
