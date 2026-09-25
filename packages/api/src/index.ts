@@ -19,6 +19,8 @@ import {
   searchDocsSchema,
 } from './schemas/validation';
 import authRouter from './routes/auth';
+import { HTTPException } from 'hono/http-exception';
+import { decryptSecret, encryptSecret, secretAAD } from './security/envelope';
 import billingRouter from './routes/billing';
 
 interface Env {
@@ -119,8 +121,13 @@ app.post(
     await enforceTierLimits(c.env.DATABASE, user.userId, user.tier);
 
     const secretId = crypto.randomUUID();
+    const origin = value ? 'imported' : 'generated';
     const secretValue = value || (await generateApiKey(service));
-    const encryptedValue = await encryptSecret(c.env.ENCRYPTION_KEY, secretValue);
+    const encryptedValue = await encryptSecret(
+      c.env.ENCRYPTION_KEY,
+      secretValue,
+      secretAAD(secretId, user.userId)
+    );
 
     const secret: Secret = {
       id: secretId,
@@ -134,7 +141,7 @@ app.post(
     // Store in KV
     await c.env.SECRETS_VAULT.put(
       `secret:${secretId}`,
-      JSON.stringify({ ...secret, value: encryptedValue }),
+      JSON.stringify({ ...secret, origin, value: encryptedValue }),
       {
         metadata: { service, environment, userId: user.userId },
       }
@@ -142,8 +149,8 @@ app.post(
 
     // Store metadata in D1
     await c.env.DATABASE.prepare(
-      `INSERT INTO secrets (id, service, environment, user_id, scopes, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO api_secrets (id, service, environment, user_id, scopes, origin, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
       .bind(
         secretId,
@@ -151,6 +158,7 @@ app.post(
         environment,
         user.userId,
         JSON.stringify(scopes || []),
+        origin,
         secret.created
       )
       .run();
@@ -194,7 +202,11 @@ app.get('/api/secrets/:id', auth, tierRateLimit(), async (c) => {
     return c.json({ error: 'Forbidden' }, 403);
   }
 
-  const decryptedValue = await decryptSecret(c.env.ENCRYPTION_KEY, secret.value);
+  const decryptedValue = await decryptSecret(
+    c.env.ENCRYPTION_KEY,
+    secret.value,
+    secretAAD(secretId, user.userId)
+  );
 
   // Audit log
   await logAudit(c.env.DATABASE, {
@@ -216,7 +228,8 @@ app.get('/api/secrets', auth, tierRateLimit(), async (c) => {
   const user = c.get('user');
   const environment = c.req.query('environment');
 
-  let query = 'SELECT * FROM secrets WHERE user_id = ? AND is_active = 1';
+  let query =
+    'SELECT id, service, environment, scopes, origin, created_at, last_rotated_at FROM api_secrets WHERE user_id = ? AND is_active = 1';
   const bindings: any[] = [user.userId];
 
   if (environment) {
@@ -261,8 +274,23 @@ app.post(
       return c.json({ error: 'Forbidden' }, 403);
     }
 
-    const newValue = await generateApiKey(secret.service);
-    const encryptedValue = await encryptSecret(c.env.ENCRYPTION_KEY, newValue);
+    // Rotation must never destroy a real credential. Previously this replaced
+    // the stored value with a random `sk_<service>_...` string, silently
+    // overwriting e.g. a user's actual Stripe key with garbage. Imported
+    // secrets now require the new provider-issued value in the request body.
+    const { value: suppliedValue } = c.get('validatedData') as { value?: string };
+    if (!suppliedValue && secret.origin !== 'generated') {
+      throw new HTTPException(409, {
+        message:
+          'This secret was imported, so SecretForge cannot mint a replacement. Rotate it with the provider and send the new credential as `value`.',
+      });
+    }
+    const newValue = suppliedValue || (await generateApiKey(secret.service));
+    const encryptedValue = await encryptSecret(
+      c.env.ENCRYPTION_KEY,
+      newValue,
+      secretAAD(secretId, user.userId)
+    );
 
     secret.value = encryptedValue;
     secret.lastRotated = new Date().toISOString();
@@ -270,8 +298,10 @@ app.post(
     await c.env.SECRETS_VAULT.put(`secret:${secretId}`, JSON.stringify(secret));
 
     // Update D1
-    await c.env.DATABASE.prepare('UPDATE secrets SET last_rotated_at = ? WHERE id = ?')
-      .bind(secret.lastRotated, secretId)
+    await c.env.DATABASE.prepare(
+      'UPDATE api_secrets SET last_rotated_at = ? WHERE id = ? AND user_id = ?'
+    )
+      .bind(secret.lastRotated, secretId, user.userId)
       .run();
 
     // Audit log
@@ -313,8 +343,8 @@ app.delete('/api/secrets/:id', auth, tierRateLimit(), async (c) => {
   }
 
   // Soft delete in D1
-  await c.env.DATABASE.prepare('UPDATE secrets SET is_active = 0 WHERE id = ?')
-    .bind(secretId)
+  await c.env.DATABASE.prepare('UPDATE api_secrets SET is_active = 0 WHERE id = ? AND user_id = ?')
+    .bind(secretId, user.userId)
     .run();
 
   // Delete from KV
@@ -364,21 +394,26 @@ app.get('/api/secrets/:id/validate', auth, tierRateLimit(), async (c) => {
   const user = c.get('user');
   const secretId = c.req.param('id');
   const framework = c.req.query('framework') || 'SOC2';
+  if (!['SOC2', 'GDPR', 'HIPAA', 'PCI-DSS'].includes(framework)) {
+    return c.json({ error: 'Unsupported framework' }, 400);
+  }
 
   // Verify ownership
-  const secret = await c.env.DATABASE.prepare('SELECT * FROM secrets WHERE id = ? AND user_id = ?')
+  const secret = await c.env.DATABASE.prepare(
+    'SELECT * FROM api_secrets WHERE id = ? AND user_id = ? AND is_active = 1'
+  )
     .bind(secretId, user.userId)
-    .first();
+    .first<{ id: string; created_at: string; last_rotated_at: string | null }>();
 
   if (!secret) {
     return c.json({ error: 'Secret not found' }, 404);
   }
 
-  const validation = await validateCompliance(c.env, secretId, framework);
+  const validation = await validateCompliance(c.env, secret, framework);
 
   // Store validation result
   await c.env.DATABASE.prepare(
-    `INSERT INTO compliance_validations (secret_id, framework, is_compliant, validation_results)
+    `INSERT INTO api_compliance_validations (secret_id, framework, is_compliant, validation_results)
      VALUES (?, ?, ?, ?)`
   )
     .bind(secretId, framework, validation.compliant ? 1 : 0, JSON.stringify(validation))
@@ -465,57 +500,13 @@ async function getRecommendations(env: Env, services: string[]) {
 
 async function findMissingKeys(env: Env, userId: string, services: string[]): Promise<string[]> {
   const existing = await env.DATABASE.prepare(
-    `SELECT DISTINCT service FROM secrets WHERE user_id = ? AND is_active = 1`
+    `SELECT DISTINCT service FROM api_secrets WHERE user_id = ? AND is_active = 1`
   )
     .bind(userId)
     .all();
 
   const existingServices = existing.results.map((r: any) => r.service);
   return services.filter((s) => !existingServices.includes(s));
-}
-
-async function encryptSecret(key: string, value: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(value);
-
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(key),
-    { name: 'AES-GCM' },
-    false,
-    ['encrypt']
-  );
-
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, cryptoKey, data);
-
-  return btoa(
-    JSON.stringify({
-      iv: Array.from(iv),
-      data: Array.from(new Uint8Array(encrypted)),
-    })
-  );
-}
-
-async function decryptSecret(key: string, encryptedValue: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const { iv, data } = JSON.parse(atob(encryptedValue));
-
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(key),
-    { name: 'AES-GCM' },
-    false,
-    ['decrypt']
-  );
-
-  const decrypted = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: new Uint8Array(iv) },
-    cryptoKey,
-    new Uint8Array(data)
-  );
-
-  return new TextDecoder().decode(decrypted);
 }
 
 async function generateApiKey(service: string): Promise<string> {
@@ -541,15 +532,53 @@ async function generateEmbedding(env: Env, text: string): Promise<number[]> {
   return data.data[0].embedding;
 }
 
-async function validateCompliance(env: Env, secretId: string, framework: string) {
+/**
+ * Evidence-based compliance checks. This previously returned `compliant: true`
+ * with every check passed regardless of the secret, which would hand users a
+ * fabricated SOC2/HIPAA/PCI attestation. Checks are now computed from data we
+ * actually hold; anything we cannot evidence is reported as not passed.
+ */
+async function validateCompliance(
+  env: Env,
+  secret: { id: string; created_at: string; last_rotated_at: string | null },
+  framework: string
+) {
+  const maxRotationDays = framework === 'PCI-DSS' ? 90 : framework === 'HIPAA' ? 90 : 180;
+  const lastRotation = new Date(secret.last_rotated_at || secret.created_at);
+  const ageDays = Math.floor((Date.now() - lastRotation.getTime()) / 86_400_000);
+
+  const auditCount = await env.DATABASE.prepare(
+    'SELECT COUNT(*) as count FROM api_audit_logs WHERE secret_id = ?'
+  )
+    .bind(secret.id)
+    .first<{ count: number }>();
+
+  const checks = [
+    {
+      name: 'Encryption at rest (AES-256-GCM, record-bound)',
+      passed: true,
+      evidence: 'Value stored only as v2 AES-GCM ciphertext bound to secret id and owner.',
+    },
+    {
+      name: 'Access logging',
+      passed: (auditCount?.count ?? 0) > 0,
+      evidence: `${auditCount?.count ?? 0} audit event(s) recorded for this secret.`,
+    },
+    {
+      name: `Key rotation within ${maxRotationDays} days`,
+      passed: ageDays <= maxRotationDays,
+      evidence: `Last rotated ${ageDays} day(s) ago.`,
+    },
+  ];
+
   return {
-    compliant: true,
+    compliant: checks.every((c) => c.passed),
     framework,
-    checks: [
-      { name: 'Encryption at rest', passed: true },
-      { name: 'Access logging', passed: true },
-      { name: 'Key rotation policy', passed: true },
-    ],
+    checks,
+    disclaimer:
+      'Automated control checks only. This is not an audit opinion or certification for ' +
+      framework +
+      '.',
   };
 }
 
@@ -566,14 +595,14 @@ async function enforceTierLimits(db: D1Database, userId: string, tier: string): 
   if (limit === -1) return; // Unlimited
 
   const count = await db
-    .prepare('SELECT COUNT(*) as count FROM secrets WHERE user_id = ? AND is_active = 1')
+    .prepare('SELECT COUNT(*) as count FROM api_secrets WHERE user_id = ? AND is_active = 1')
     .bind(userId)
     .first<{ count: number }>();
 
   if (count && count.count >= limit) {
-    throw new Error(
-      `Free tier limit reached (${limit} secrets). Upgrade to Pro for unlimited secrets.`
-    );
+    throw new HTTPException(402, {
+      message: `Free tier limit reached (${limit} secrets). Upgrade to Pro for unlimited secrets.`,
+    });
   }
 }
 
@@ -589,7 +618,7 @@ async function logAudit(
 ) {
   await db
     .prepare(
-      `INSERT INTO audit_logs (secret_id, user_id, action, ip_address, user_agent, timestamp)
+      `INSERT INTO api_audit_logs (secret_id, user_id, action, ip_address, user_agent, timestamp)
        VALUES (?, ?, ?, ?, ?, ?)`
     )
     .bind(

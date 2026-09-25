@@ -10,8 +10,9 @@ export const createUserSchema = z.object({
     .min(8, 'Password must be at least 8 characters')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
     .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  tier: z.enum(['free', 'pro', 'team', 'enterprise']).default('free'),
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .max(256, 'Password must be at most 256 characters'),
+  // NOTE: no `tier` here on purpose — tiers are granted by billing, never by the client.
 });
 
 export const loginSchema = z.object({
@@ -37,6 +38,9 @@ export const updateSecretSchema = z.object({
 });
 
 export const rotateSecretSchema = z.object({
+  // New credential value issued by the provider. Required for secrets the user
+  // imported; SecretForge only generates values for secrets it generated itself.
+  value: z.string().min(1).max(16384).optional(),
   gracePeriodHours: z.number().min(0).max(168).optional(), // Max 1 week
   notifyChannels: z.array(z.enum(['email', 'slack', 'webhook'])).optional(),
 });

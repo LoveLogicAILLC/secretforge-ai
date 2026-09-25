@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
-import { createJWT, generateApiKey } from '../middleware/auth';
+import { auth, createJWT, generateApiKey } from '../middleware/auth';
+import { hashPassword, verifyPassword } from '../security/passwords';
 import { validateRequest } from '../middleware/errorHandler';
 import {
   createUserSchema,
@@ -13,6 +14,7 @@ interface AuthEnv {
   DATABASE: D1Database;
   JWT_SECRET: string;
   ENCRYPTION_KEY: string;
+  API_KEY_SALT: string;
 }
 
 const authRouter = new Hono<{ Bindings: AuthEnv }>();
@@ -22,7 +24,11 @@ const authRouter = new Hono<{ Bindings: AuthEnv }>();
  * POST /auth/signup
  */
 authRouter.post('/signup', validateRequest(createUserSchema), async (c) => {
-  const { email, password, tier } = c.get('validatedData');
+  const { email, password } = c.get('validatedData');
+  // Every account starts on the free tier. Paid tiers are only ever granted by
+  // the Stripe webhook after a successful checkout; accepting `tier` from the
+  // request body let anyone self-assign `enterprise`.
+  const tier = 'free' as const;
 
   // Check if user already exists
   const existing = await c.env.DATABASE.prepare('SELECT id FROM users WHERE email = ?')
@@ -91,13 +97,22 @@ authRouter.post('/login', validateRequest(loginSchema), async (c) => {
     .first();
 
   if (!user) {
+    // Burn the same PBKDF2 cost as a real check so response timing does not
+    // reveal which email addresses have accounts.
+    await verifyPassword(password, DUMMY_HASH);
     throw new HTTPException(401, { message: 'Invalid credentials' });
   }
 
-  // Verify password
-  const isValid = await verifyPassword(password, user.password_hash as string);
-  if (!isValid) {
+  const check = await verifyPassword(password, user.password_hash as string);
+  if (!check.valid) {
     throw new HTTPException(401, { message: 'Invalid credentials' });
+  }
+
+  if (check.needsRehash) {
+    // Transparently upgrade legacy unsalted SHA-256 hashes on successful login.
+    await c.env.DATABASE.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?')
+      .bind(await hashPassword(password), new Date().toISOString(), user.id)
+      .run();
   }
 
   // Update last login
@@ -131,7 +146,7 @@ authRouter.post('/login', validateRequest(loginSchema), async (c) => {
  * Get current user
  * GET /auth/me
  */
-authRouter.get('/me', async (c) => {
+authRouter.get('/me', auth, async (c) => {
   const user = c.get('user');
 
   if (!user) {
@@ -158,7 +173,7 @@ authRouter.get('/me', async (c) => {
  * Create API key
  * POST /auth/api-keys
  */
-authRouter.post('/api-keys', validateRequest(createApiKeySchema), async (c) => {
+authRouter.post('/api-keys', auth, validateRequest(createApiKeySchema), async (c) => {
   const user = c.get('user');
   if (!user) {
     throw new HTTPException(401, { message: 'Not authenticated' });
@@ -210,7 +225,7 @@ authRouter.post('/api-keys', validateRequest(createApiKeySchema), async (c) => {
  * List API keys
  * GET /auth/api-keys
  */
-authRouter.get('/api-keys', async (c) => {
+authRouter.get('/api-keys', auth, async (c) => {
   const user = c.get('user');
   if (!user) {
     throw new HTTPException(401, { message: 'Not authenticated' });
@@ -237,7 +252,7 @@ authRouter.get('/api-keys', async (c) => {
  * Revoke API key
  * DELETE /auth/api-keys/:id
  */
-authRouter.delete('/api-keys/:id', async (c) => {
+authRouter.delete('/api-keys/:id', auth, async (c) => {
   const user = c.get('user');
   if (!user) {
     throw new HTTPException(401, { message: 'Not authenticated' });
@@ -264,19 +279,29 @@ authRouter.delete('/api-keys/:id', async (c) => {
  * Refresh JWT token
  * POST /auth/refresh
  */
-authRouter.post('/refresh', async (c) => {
+authRouter.post('/refresh', auth, async (c) => {
   const user = c.get('user');
   if (!user) {
     throw new HTTPException(401, { message: 'Not authenticated' });
   }
 
-  // Generate new JWT
+  // Re-read the account so a downgraded/cancelled subscription or a
+  // deactivated user is reflected, instead of re-signing stale claims forever.
+  const current = await c.env.DATABASE.prepare(
+    'SELECT id, email, tier, organization_id FROM users WHERE id = ? AND is_active = 1'
+  )
+    .bind(user.userId)
+    .first();
+  if (!current) {
+    throw new HTTPException(401, { message: 'Account is no longer active' });
+  }
+
   const token = await createJWT(
     {
-      userId: user.userId,
-      email: user.email,
-      tier: user.tier,
-      organizationId: user.organizationId,
+      userId: current.id as string,
+      email: current.email as string,
+      tier: current.tier as string,
+      organizationId: (current.organization_id as string) || undefined,
     },
     c.env.JWT_SECRET
   );
@@ -284,23 +309,9 @@ authRouter.post('/refresh', async (c) => {
   return c.json({ token });
 });
 
-/**
- * Hash password using SHA-256
- */
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hash = await crypto.subtle.digest('SHA-256', data);
-  return btoa(String.fromCharCode(...new Uint8Array(hash)));
-}
-
-/**
- * Verify password
- */
-async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  const passwordHash = await hashPassword(password);
-  return passwordHash === hash;
-}
+// A valid PBKDF2 hash of a random string, used to equalise login timing.
+const DUMMY_HASH =
+  'pbkdf2_sha256$100000$c2VjcmV0Zm9yZ2UtZHVtbXk=$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
 
 /**
  * Hash API key

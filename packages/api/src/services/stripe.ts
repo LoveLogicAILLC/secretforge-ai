@@ -1,3 +1,4 @@
+import { timingSafeEqual } from '../security/timingSafe';
 /**
  * Stripe Integration for Subscription Billing
  * Handles Free, Pro, Team, and Enterprise tiers
@@ -359,42 +360,41 @@ export class StripeService {
   /**
    * Verify webhook signature
    */
-  async verifyWebhook(payload: string, signature: string): Promise<any> {
-    // Stripe webhook signature verification
+  async verifyWebhook(payload: string, signature: string, toleranceSeconds = 300): Promise<any> {
+    // The key must be imported for 'sign': it was previously imported with only
+    // ['verify'] and then passed to subtle.sign(), which throws, so every
+    // webhook (including subscription upgrades) was rejected.
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey(
       'raw',
       encoder.encode(this.webhookSecret),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
-      ['verify']
+      ['sign']
     );
 
-    const signatureParts = signature.split(',');
-    const timestamp = signatureParts.find((part) => part.startsWith('t='))?.substring(2);
-    const signatureHash = signatureParts.find((part) => part.startsWith('v1='))?.substring(3);
+    const parts = signature.split(',').map((p) => p.trim());
+    const timestamp = parts.find((part) => part.startsWith('t='))?.substring(2);
+    // Stripe sends several v1 signatures while a signing secret is being rolled.
+    const candidates = parts.filter((part) => part.startsWith('v1=')).map((p) => p.substring(3));
 
-    if (!timestamp || !signatureHash) {
+    if (!timestamp || !/^\d+$/.test(timestamp) || candidates.length === 0) {
       throw new Error('Invalid signature format');
     }
 
-    const signedPayload = `${timestamp}.${payload}`;
-    const expectedSignature = await crypto.subtle.sign('HMAC', key, encoder.encode(signedPayload));
+    // Check the timestamp window first (both directions) to bound replays.
+    const now = Math.floor(Date.now() / 1000);
+    if (Math.abs(now - parseInt(timestamp, 10)) > toleranceSeconds) {
+      throw new Error('Timestamp outside tolerance');
+    }
 
-    const expectedHex = Array.from(new Uint8Array(expectedSignature))
+    const expected = await crypto.subtle.sign('HMAC', key, encoder.encode(`${timestamp}.${payload}`));
+    const expectedHex = Array.from(new Uint8Array(expected))
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
 
-    if (expectedHex !== signatureHash) {
+    if (!candidates.some((sig) => timingSafeEqual(sig, expectedHex))) {
       throw new Error('Invalid signature');
-    }
-
-    // Check timestamp (prevent replay attacks)
-    const now = Math.floor(Date.now() / 1000);
-    const timestampNum = parseInt(timestamp);
-    if (now - timestampNum > 300) {
-      // 5 minutes
-      throw new Error('Timestamp too old');
     }
 
     return JSON.parse(payload);

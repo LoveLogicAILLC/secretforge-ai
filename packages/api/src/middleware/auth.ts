@@ -15,118 +15,95 @@ export interface AuthEnv {
 }
 
 /**
- * JWT Authentication Middleware
- * Validates Bearer tokens and extracts user information
+ * Resolve the caller from a Bearer JWT or an X-API-Key header.
+ * Returns null when neither is present or valid. Deliberately does NOT wrap the
+ * downstream handler: previously `await next()` sat inside the try block, so an
+ * exception thrown by the route handler was reported as a 401 and, when both
+ * credentials were sent, the handler could run a second time via the API-key
+ * branch (e.g. creating a secret twice).
+ */
+async function resolveUser(c: Context<{ Bindings: AuthEnv }>): Promise<AuthUser | null> {
+  const authHeader = c.req.header('Authorization');
+  const apiKey = c.req.header('X-API-Key');
+
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      return await verifyJWT(authHeader.substring(7), c.env.JWT_SECRET);
+    } catch {
+      // fall through to API key
+    }
+  }
+
+  if (apiKey?.startsWith('sf_')) {
+    try {
+      return await validateApiKey(c.env.DATABASE, apiKey);
+    } catch {
+      // invalid key
+    }
+  }
+
+  return null;
+}
+
+/**
+ * JWT Authentication Middleware (Bearer only)
  */
 export async function jwtAuth(c: Context<{ Bindings: AuthEnv }>, next: Next) {
   const authHeader = c.req.header('Authorization');
-
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new HTTPException(401, { message: 'Missing or invalid authorization header' });
   }
-
-  const token = authHeader.substring(7);
-
+  let user: AuthUser;
   try {
-    const user = await verifyJWT(token, c.env.JWT_SECRET);
-    c.set('user', user);
-    await next();
-  } catch (error) {
+    user = await verifyJWT(authHeader.substring(7), c.env.JWT_SECRET);
+  } catch {
     throw new HTTPException(401, { message: 'Invalid or expired token' });
   }
+  c.set('user', user);
+  await next();
 }
 
 /**
- * API Key Authentication Middleware
- * Validates API keys from X-API-Key header
+ * API Key Authentication Middleware (X-API-Key only)
  */
 export async function apiKeyAuth(c: Context<{ Bindings: AuthEnv }>, next: Next) {
   const apiKey = c.req.header('X-API-Key');
-
   if (!apiKey) {
     throw new HTTPException(401, { message: 'Missing API key' });
   }
-
   if (!apiKey.startsWith('sf_')) {
     throw new HTTPException(401, { message: 'Invalid API key format' });
   }
-
+  let user: AuthUser;
   try {
-    const user = await validateApiKey(c.env.DATABASE, apiKey);
-    c.set('user', user);
-    await next();
-  } catch (error) {
+    user = await validateApiKey(c.env.DATABASE, apiKey);
+  } catch {
     throw new HTTPException(401, { message: 'Invalid API key' });
   }
+  c.set('user', user);
+  await next();
 }
 
 /**
- * Flexible Authentication Middleware
- * Accepts either JWT Bearer token or API key
+ * Flexible Authentication Middleware: JWT Bearer token or API key.
  */
 export async function auth(c: Context<{ Bindings: AuthEnv }>, next: Next) {
-  const authHeader = c.req.header('Authorization');
-  const apiKey = c.req.header('X-API-Key');
-
-  // Try JWT first
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    try {
-      const user = await verifyJWT(token, c.env.JWT_SECRET);
-      c.set('user', user);
-      await next();
-      return;
-    } catch (error) {
-      // JWT validation failed, try API key
-    }
+  const user = await resolveUser(c);
+  if (!user) {
+    throw new HTTPException(401, {
+      message: 'Authentication required. Provide valid JWT Bearer token or X-API-Key header',
+    });
   }
-
-  // Try API key
-  if (apiKey?.startsWith('sf_')) {
-    try {
-      const user = await validateApiKey(c.env.DATABASE, apiKey);
-      c.set('user', user);
-      await next();
-      return;
-    } catch (error) {
-      // API key validation failed
-    }
-  }
-
-  throw new HTTPException(401, {
-    message: 'Authentication required. Provide valid JWT Bearer token or X-API-Key header',
-  });
+  c.set('user', user);
+  await next();
 }
 
 /**
- * Optional Authentication Middleware
- * Sets user if authenticated, but doesn't require it
+ * Optional Authentication Middleware: sets user if authenticated.
  */
 export async function optionalAuth(c: Context<{ Bindings: AuthEnv }>, next: Next) {
-  const authHeader = c.req.header('Authorization');
-  const apiKey = c.req.header('X-API-Key');
-
-  // Try JWT first
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.substring(7);
-    try {
-      const user = await verifyJWT(token, c.env.JWT_SECRET);
-      c.set('user', user);
-    } catch (error) {
-      // Silently fail for optional auth
-    }
-  }
-
-  // Try API key
-  if (apiKey?.startsWith('sf_')) {
-    try {
-      const user = await validateApiKey(c.env.DATABASE, apiKey);
-      c.set('user', user);
-    } catch (error) {
-      // Silently fail for optional auth
-    }
-  }
-
+  const user = await resolveUser(c);
+  if (user) c.set('user', user);
   await next();
 }
 
@@ -169,9 +146,16 @@ async function verifyJWT(token: string, secret: string): Promise<AuthUser> {
     );
 
     // Split JWT into parts
-    const [headerB64, payloadB64, signatureB64] = token.split('.');
-    if (!headerB64 || !payloadB64 || !signatureB64) {
+    const parts = token.split('.');
+    const [headerB64, payloadB64, signatureB64] = parts;
+    if (parts.length !== 3 || !headerB64 || !payloadB64 || !signatureB64) {
       throw new Error('Invalid JWT format');
+    }
+
+    // Only accept the algorithm we issue.
+    const header = JSON.parse(atob(headerB64.replace(/-/g, '+').replace(/_/g, '/')));
+    if (header.alg !== 'HS256') {
+      throw new Error('Unexpected JWT algorithm');
     }
 
     // Verify signature
@@ -191,9 +175,12 @@ async function verifyJWT(token: string, secret: string): Promise<AuthUser> {
     // Decode payload
     const payload = JSON.parse(atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/')));
 
-    // Check expiration
-    if (payload.exp && payload.exp < Date.now() / 1000) {
-      throw new Error('JWT expired');
+    // Every token we issue has an expiry; a token without one never dies.
+    if (typeof payload.exp !== 'number' || payload.exp < Date.now() / 1000) {
+      throw new Error('JWT expired or missing exp');
+    }
+    if (!(payload.sub || payload.userId)) {
+      throw new Error('JWT missing subject');
     }
 
     return {
