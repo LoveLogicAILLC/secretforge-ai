@@ -2,8 +2,8 @@
  * Shared utility functions
  */
 
-import { SERVICE_DETECTION_MAP, API_KEY_PREFIX_MAP } from './constants';
-import type { Environment } from './types';
+import { SERVICE_DETECTION_MAP, API_KEY_PREFIX_MAP } from './constants.js';
+import type { Environment } from './types.js';
 
 /**
  * Detect required services from project dependencies
