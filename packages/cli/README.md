@@ -62,6 +62,33 @@ Examples:
   secretforge chat  # Interactive mode
 ```
 
+## Secret scanning
+
+```bash
+sf scan                      # working tree (respects .gitignore)
+sf scan --staged             # only lines about to be committed
+sf scan --history            # every line ever added, on every branch
+sf scan --history --since "6 months ago"
+sf scan --format sarif -o secretforge.sarif   # GitHub Code Scanning
+sf scan --format json
+sf hook install              # block commits that add secrets (husky-aware)
+```
+
+Exit codes: `0` clean, `1` findings at or above `--fail-on` (default `high`), `2` error.
+
+**Adopting on an existing repo:** run `sf scan --history --update-baseline` once,
+review `.secretforge-baseline.json` (fingerprints only, no secret values), rotate
+anything real, and commit it. After that only *new* secrets fail the scan.
+Suppress a single false positive inline with a `secretforge:allow` comment.
+
+**GitHub Code Scanning:**
+
+```yaml
+- run: npx sf scan --format sarif -o secretforge.sarif --fail-on none
+- uses: github/codeql-action/upload-sarif@v3
+  with: { sarif_file: secretforge.sarif }
+```
+
 ## Configuration
 
 CLI stores config in `.secretforge.json`:
