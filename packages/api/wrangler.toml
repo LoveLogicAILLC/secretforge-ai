@@ -10,7 +10,7 @@ enabled = true
 [[d1_databases]]
 binding = "DATABASE"
 database_name = "secretforge-db"
-database_id = "YOUR_D1_DATABASE_ID"
+database_id = "83cce8ad-9f2e-404f-9ada-943849e14efe"
 
 # KV for encrypted secrets storage
 [[kv_namespaces]]

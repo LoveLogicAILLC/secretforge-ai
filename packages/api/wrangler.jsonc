@@ -18,7 +18,7 @@
     {
       "binding": "DATABASE",
       "database_name": "secretforge-db",
-      "database_id": "your-d1-database-id"
+      "database_id": "83cce8ad-9f2e-404f-9ada-943849e14efe"
     }
   ],
   "vectorize": [
