@@ -6,6 +6,11 @@
     "secretforge": "./dist/index.js",
     "sf": "./dist/sf.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "CLI_README.md"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { Agent } from 'agents';
+import { Agent, AgentNamespace } from 'agents';
 import { OpenAI } from 'openai';
 import { auth, optionalAuth, requireTier, createJWT } from './middleware/auth';
 import { tierRateLimit, ipRateLimit, endpointRateLimit } from './middleware/rateLimit';
