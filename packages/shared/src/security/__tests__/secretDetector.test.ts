@@ -52,8 +52,8 @@ describe('SecretDetector v2 — coverage of real-world key formats', () => {
     ['stripe-live-secret', `STRIPE=${T.stripeRestricted}`],
     ['npm-token', `//registry.npmjs.org/:_authToken=${T.npm}`],
     ['slack-token', `SLACK=${T.slack}`],
-    ['private-key', '-----BEGIN EC PRIVATE KEY-----'],
-    ['private-key', '-----BEGIN PRIVATE KEY-----'],
+    ['private-key', '-----BEGIN EC ' + 'PRIVATE KEY-----'],
+    ['private-key', `"private_key": "-----BEGIN ${'PRIVATE KEY'}-----\\n${rnd(AZ09, 64)}"`],
     ['connection-string-password', 'DATABASE_URL=postgresql://app:S3cr3t!Pa55w0rd@db.internal:5432/prod'],
     ['connection-string-password', 'mongodb+srv://svc:hunter2hunter2@cluster0.mongodb.net/app'],
   ])('detects %s', (rule, line) => {
@@ -94,6 +94,10 @@ describe('SecretDetector v2 — precision', () => {
   it('requires entropy for generic assignments', () => {
     expect(ruleIds('secret = "aaaaaaaaaaaaaaaaaaaaaaaa"')).toEqual([]);
     expect(ruleIds(`client_secret = "${rnd(AZ09, 32)}"`)).toEqual(['generic-assignment']);
+  });
+
+  it('ignores a PEM header that is only mentioned in code or docs', () => {
+    expect(ruleIds(`if (pem.startsWith('-----BEGIN RSA ${'PRIVATE KEY'}-----')) {`)).toEqual([]);
   });
 
   it('skips binary content', () => {

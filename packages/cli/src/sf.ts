@@ -6,10 +6,12 @@ import { addCommand } from './commands/add.js';
 import { listCommand } from './commands/list.js';
 import { injectCommand } from './commands/inject.js';
 import { exportCommand } from './commands/export.js';
+import { scanCommand, CLI_VERSION } from './commands/scan.js';
+import { hookCommand } from './commands/hook.js';
 
 const program = new Command();
 
-program.name('sf').description('SecretForge - AI-powered secret management CLI').version('1.0.0');
+program.name('sf').description('SecretForge - AI-powered secret management CLI').version(CLI_VERSION);
 
 // sf init - Initialize project
 program
@@ -61,6 +63,7 @@ program
   .description('Inject encrypted secrets into target files')
   .requiredOption('-e, --env <environment>', 'Environment to inject')
   .option('-f, --file <file>', 'Output file (default: .env.<environment>)')
+  .option('--force', 'Write even if the target file is tracked by git')
   .action(async (options) => {
     try {
       await injectCommand(options);
@@ -79,6 +82,45 @@ program
   .action(async (options) => {
     try {
       await exportCommand(options);
+    } catch (error) {
+      console.error(chalk.red(`Error: ${error instanceof Error ? error.message : error}`));
+      process.exit(1);
+    }
+  });
+
+// sf scan - Detect leaked secrets
+program
+  .command('scan')
+  .description('Scan the working tree, staged changes, or git history for leaked secrets')
+  .option('--staged', 'Scan only lines added in the git index (use in pre-commit)')
+  .option('--history', 'Scan every line ever added on any branch')
+  .option('--since <date>', 'With --history: only commits since this date (e.g. "3 months ago")')
+  .option('-p, --path <dir>', 'Directory to scan (default: current directory)')
+  .option('-f, --format <format>', 'pretty (default), json, or sarif', 'pretty')
+  .option('-o, --output <file>', 'Write the report to a file')
+  .option('-b, --baseline <file>', 'Baseline of accepted findings', '.secretforge-baseline.json')
+  .option('--update-baseline', 'Accept all current findings into the baseline')
+  .option('--fail-on <severity>', 'Exit 1 at/above: critical, high, medium, low, none', 'high')
+  .option('--min-confidence <n>', 'Drop findings below this confidence (0-1)', '0.5')
+  .action(async (options) => {
+    try {
+      const { exitCode } = await scanCommand(options);
+      process.exitCode = exitCode;
+    } catch (error) {
+      console.error(chalk.red(`Error: ${error instanceof Error ? error.message : error}`));
+      process.exitCode = 2;
+    }
+  });
+
+// sf hook - Manage the git pre-commit hook
+program
+  .command('hook')
+  .argument('<action>', 'install | uninstall')
+  .description('Install a pre-commit hook that blocks commits containing secrets')
+  .option('--fail-on <severity>', 'Minimum severity that blocks a commit', 'high')
+  .action(async (action, options) => {
+    try {
+      await hookCommand(action, options);
     } catch (error) {
       console.error(chalk.red(`Error: ${error instanceof Error ? error.message : error}`));
       process.exit(1);

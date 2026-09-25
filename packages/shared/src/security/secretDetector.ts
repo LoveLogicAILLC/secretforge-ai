@@ -250,7 +250,11 @@ export const SECRET_PATTERNS: SecretPattern[] = [
   {
     id: 'private-key',
     name: 'Private Key',
-    regex: /(-----BEGIN (?:RSA |EC |DSA |OPENSSH |ENCRYPTED |PGP )?PRIVATE KEY(?: BLOCK)?-----)/g,
+    // Only a real key: the header alone on its line (PEM file / heredoc), or
+    // followed by an escaped newline and key body (JSON, e.g. GCP service
+    // accounts). A header merely mentioned in code or docs is not a leak.
+    regex:
+      /(-----BEGIN (?:RSA |EC |DSA |OPENSSH |ENCRYPTED |PGP )?PRIVATE KEY(?: BLOCK)?-----)(?=[ \t]*$|\\n[A-Za-z0-9+/=]{16,})/g,
     group: 1,
     severity: 'critical',
     recommendation: 'Private key material. Treat it as compromised: re-issue the key/cert.',

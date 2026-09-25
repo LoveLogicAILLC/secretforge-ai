@@ -1,14 +1,42 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { Anthropic } from '@anthropic-ai/sdk';
+import { SecretDetector, type SecretMatch as DetectorMatch } from '@secretforge/shared/scanner';
 
+/** Finding shape used by this action. Deliberately has no raw secret value. */
 interface SecretMatch {
   line: number;
   file: string;
   type: string;
-  value: string;
+  masked: string;
   confidence: number;
   service?: string;
+}
+
+const detector = new SecretDetector();
+
+/** Map detector rule ids to SecretForge service names (for auto-provisioning). */
+const RULE_SERVICE: Record<string, string> = {
+  'aws-access-key-id': 'aws',
+  'aws-secret-access-key': 'aws',
+  'stripe-live-secret': 'stripe',
+  'stripe-test-secret': 'stripe',
+  'openai-api-key': 'openai',
+  'anthropic-api-key': 'anthropic',
+  'github-token': 'github',
+  'github-fine-grained-pat': 'github',
+  'sendgrid-api-key': 'sendgrid',
+  'twilio-api-key': 'twilio',
+};
+
+function toFinding(m: DetectorMatch): SecretMatch {
+  return {
+    line: m.location.line,
+    file: m.location.file,
+    type: m.type,
+    masked: m.maskedValue,
+    confidence: m.confidence,
+    service: RULE_SERVICE[m.ruleId] ?? 'unknown',
+  };
 }
 
 interface ProvisionResult {
@@ -36,31 +64,37 @@ async function run(): Promise<void> {
 
     core.info('🔍 SecretForge Shield: Scanning for exposed secrets...');
 
-    // Get PR diff
-    const { data: files } = await octokit.rest.pulls.listFiles({
+    // All changed files (listFiles is paginated at 30 per page; the previous
+    // code only ever looked at the first page).
+    const files = await octokit.paginate(octokit.rest.pulls.listFiles, {
       owner: context.repo.owner,
       repo: context.repo.repo,
       pull_number: context.payload.pull_request.number,
+      per_page: 100,
     });
 
-    // Scan all changed files
     const allSecrets: SecretMatch[] = [];
 
     for (const file of files) {
       if (file.status === 'removed') continue;
 
-      // Get file content
+      if (file.patch) {
+        // Scan only the lines this PR adds, with correct line numbers.
+        const diff = `+++ b/${file.filename}\n${file.patch}`;
+        allSecrets.push(...detector.scanDiff(diff).map(toFinding));
+        continue;
+      }
+
+      // GitHub omits `patch` for large/binary diffs — fall back to the file.
       const { data: content } = await octokit.rest.repos.getContent({
         owner: context.repo.owner,
         repo: context.repo.repo,
         path: file.filename,
         ref: context.payload.pull_request.head.sha,
       });
-
-      if ('content' in content) {
+      if ('content' in content && content.content) {
         const decoded = Buffer.from(content.content, 'base64').toString('utf-8');
-        const secrets = await detectSecrets(decoded, file.filename);
-        allSecrets.push(...secrets);
+        allSecrets.push(...detector.scanFile(decoded, file.filename).map(toFinding));
       }
     }
 
@@ -99,53 +133,6 @@ async function run(): Promise<void> {
   }
 }
 
-async function detectSecrets(content: string, filename: string): Promise<SecretMatch[]> {
-  const secrets: SecretMatch[] = [];
-  const lines = content.split('\n');
-
-  // Pattern-based detection (fast pass)
-  const patterns = [
-    { type: 'aws', regex: /AKIA[0-9A-Z]{16}/, service: 'aws' },
-    { type: 'stripe', regex: /sk_live_[0-9a-zA-Z]{24,}/, service: 'stripe' },
-    { type: 'stripe_test', regex: /sk_test_[0-9a-zA-Z]{24,}/, service: 'stripe' },
-    { type: 'openai', regex: /sk-[a-zA-Z0-9]{48}/, service: 'openai' },
-    { type: 'anthropic', regex: /sk-ant-[a-zA-Z0-9-]{95}/, service: 'anthropic' },
-    { type: 'github', regex: /ghp_[a-zA-Z0-9]{36}/, service: 'github' },
-    {
-      type: 'generic_api_key',
-      regex: /['"]?[a-zA-Z0-9_-]*api[_-]?key['"]?\s*[:=]\s*['"][a-zA-Z0-9_-]{20,}['"]/,
-      service: 'unknown',
-    },
-    { type: 'jwt', regex: /eyJ[a-zA-Z0-9_-]*\.eyJ[a-zA-Z0-9_-]*\.[a-zA-Z0-9_-]*/ },
-  ];
-
-  lines.forEach((line, index) => {
-    // Skip comments and obvious false positives
-    if (line.trim().startsWith('//') || line.trim().startsWith('#')) return;
-    if (filename.includes('.env.example') || filename.includes('.env.template')) return;
-
-    patterns.forEach((pattern) => {
-      const matches = line.match(pattern.regex);
-      if (matches) {
-        secrets.push({
-          line: index + 1,
-          file: filename,
-          type: pattern.type,
-          value: matches[0].substring(0, 20) + '...',
-          confidence: 0.9,
-          service: pattern.service,
-        });
-      }
-    });
-  });
-
-  // TODO: Add AI-powered detection for higher accuracy
-  // const aiSecrets = await detectWithAI(content, filename);
-  // secrets.push(...aiSecrets);
-
-  return secrets;
-}
-
 async function provisionSecrets(
   secrets: SecretMatch[],
   apiKey: string
@@ -160,7 +147,9 @@ async function provisionSecrets(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
+          // SecretForge API keys (sf_...) are sent as X-API-Key; the Bearer
+          // header is for JWTs, so provisioning always 401'd before.
+          'X-API-Key': apiKey,
         },
         body: JSON.stringify({
           service: secret.service,
@@ -173,7 +162,10 @@ async function provisionSecrets(
         }),
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`SecretForge API returned ${response.status}`);
+      }
+      const data = (await response.json()) as { secret: { id: string } };
       results.push({
         service: secret.service,
         environment: 'production',
@@ -218,12 +210,12 @@ Found **${secrets.length}** exposed secret${secrets.length > 1 ? 's' : ''} in th
 
 ### 🚨 Detected Secrets:
 
-| File | Line | Type | Confidence |
-|------|------|------|------------|
+| File | Line | Type | Value (masked) | Confidence |
+|------|------|------|----------------|------------|
 `;
 
   secrets.forEach((secret) => {
-    comment += `| \`${secret.file}\` | ${secret.line} | ${secret.type} | ${(secret.confidence * 100).toFixed(0)}% |\n`;
+    comment += `| \`${secret.file}\` | ${secret.line} | ${secret.type} | \`${secret.masked}\` | ${(secret.confidence * 100).toFixed(0)}% |\n`;
   });
 
   comment += '\n---\n\n';
