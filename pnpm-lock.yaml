@@ -22,7 +22,7 @@ importers:
     dependencies:
       agents:
         specifier: ^0.7.9
-        version: 0.7.9(@cloudflare/workers-types@4.20260702.1)(ai@6.0.291)(react@19.3.0)(zod@3.25.76)
+        version: 0.7.9(@cloudflare/workers-types@4.20260702.1)(ai@6.0.292)(react@19.3.0)(zod@3.25.76)
       hono:
         specifier: ^4.11.4
         version: 4.13.9
@@ -67,8 +67,8 @@ importers:
         specifier: ^5.3.0
         version: 5.6.2
       commander:
-        specifier: ^12.0.0
-        version: 12.1.0
+        specifier: ^15.0.0
+        version: 15.0.0
       inquirer:
         specifier: ^13.3.2
         version: 13.4.3(@types/node@20.19.43)
@@ -251,8 +251,8 @@ packages:
     resolution: {integrity: sha512-wi9JjgKLYS7U/z8PPbco+PvTb/nRWjeoFlJ1Qer83k/3C5PHQi28hiVdeE2kHXmIL99mQFawx8qt/JPjZilJ8Q==}
     dev: false
 
-  /@ai-sdk/gateway@3.0.201(zod@3.25.76):
-    resolution: {integrity: sha512-kbnt9E213FCVXJVyjRZDxxbTwANYIzKZ16eIGTGjsDeC4FlBDpiYx7miZFQ6Yym6DFekAXfZHshthYXjFf44HA==}
+  /@ai-sdk/gateway@3.0.202(zod@3.25.76):
+    resolution: {integrity: sha512-Ronhnf8CD4r1etZ37foVj+1klJfipLIcIYWH7/+WsotBrB64JdVzz2iC3PpzYYOcqKVcN1gvJPBYeJTCGfStRQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -272,7 +272,7 @@ packages:
       '@ai-sdk/provider': 3.0.17
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.1.1
-      undici: 6.28.1
+      undici: 6.29.0
       zod: 3.25.76
     dev: false
 
@@ -3186,7 +3186,7 @@ packages:
       - typescript
     dev: false
 
-  /agents@0.7.9(@cloudflare/workers-types@4.20260702.1)(ai@6.0.291)(react@19.3.0)(zod@3.25.76):
+  /agents@0.7.9(@cloudflare/workers-types@4.20260702.1)(ai@6.0.292)(react@19.3.0)(zod@3.25.76):
     resolution: {integrity: sha512-NNzFkDLrsZQC9oJlDOcgktQxeNWUfZuftimhGmcin+7kULsmdks1AUPXTXQ4mHJZBilKpL0pQzCq5aQMQCYEKA==}
     hasBin: true
     peerDependencies:
@@ -3218,7 +3218,7 @@ packages:
     dependencies:
       '@cfworker/json-schema': 4.1.1
       '@modelcontextprotocol/sdk': 1.26.0(@cfworker/json-schema@4.1.1)(zod@3.25.76)
-      ai: 6.0.291(zod@3.25.76)
+      ai: 6.0.292(zod@3.25.76)
       cron-schedule: 6.0.0
       json-schema: 0.4.0
       json-schema-to-typescript: 15.0.4
@@ -3235,13 +3235,13 @@ packages:
       - supports-color
     dev: false
 
-  /ai@6.0.291(zod@3.25.76):
-    resolution: {integrity: sha512-Pd5gEN3HGgUZJhzvSY5PSiCAXEFdgX+40XGaAj6uk6UBxAhPX1VbnQKSD0StzlGbw+chN7v6ZN4kVrXDQ+u/tQ==}
+  /ai@6.0.292(zod@3.25.76):
+    resolution: {integrity: sha512-bWHUQhqCoHUj+KGSmU6u5ikZY+3zbsLEBNGOxIYH8D+MLzWO/iuvFjeacE45ekfuBLX8Z1DqDnZsPL/to8pTiw==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
     dependencies:
-      '@ai-sdk/gateway': 3.0.201(zod@3.25.76)
+      '@ai-sdk/gateway': 3.0.202(zod@3.25.76)
       '@ai-sdk/provider': 3.0.17
       '@ai-sdk/provider-utils': 4.0.54(zod@3.25.76)
       '@opentelemetry/api': 1.9.1
@@ -3749,9 +3749,9 @@ packages:
     resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
     dev: true
 
-  /commander@12.1.0:
-    resolution: {integrity: sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==}
-    engines: {node: '>=18'}
+  /commander@15.0.0:
+    resolution: {integrity: sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==}
+    engines: {node: '>=22.12.0'}
     dev: false
 
   /commander@4.1.1:
@@ -7501,8 +7501,8 @@ packages:
       '@fastify/busboy': 2.1.1
     dev: false
 
-  /undici@6.28.1:
-    resolution: {integrity: sha512-zWpdTVD54H48CIybL0rWQ3ukpb9d23wM7eH5RtfdmeP70cWHNjtfo7P4vZX+5CoDcO53J4Pu5uXp7lNfjc6DRA==}
+  /undici@6.29.0:
+    resolution: {integrity: sha512-R+RODBqp6i2pPflGdq+xIOUkl+RNfGgHwoinecKu/JCuf2uO06cOKoDbI2P7Dn6KcswdKwrczbU6IYJ6K8X+wg==}
     engines: {node: '>=18.17'}
     dev: false
 
