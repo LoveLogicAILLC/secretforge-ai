@@ -1,0 +1,2 @@
+#!/bin/sh
+exec '/Users/lovelogic/.hermes/node/bin/node' '/Users/lovelogic/.local/lib/node_modules/oh-my-codex/dist/cli/omx.js' "$@"

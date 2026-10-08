@@ -1,0 +1,14 @@
+{
+  "owner": "hud",
+  "pid": 27299,
+  "cwd": "/Users/lovelogic/Documents/GitHub/secretforge-ai/packages/api",
+  "heartbeat_at": "2026-09-25T09:29:52.305Z",
+  "cooldown_ms": 5000,
+  "jitter_ms": 101,
+  "skip_count": 41,
+  "last_status": "skipped",
+  "last_reason": "rate_limited",
+  "last_spawn_at": "2026-09-25T09:29:49.526Z",
+  "last_skip_at": "2026-09-25T09:29:52.305Z",
+  "next_allowed_at": "2026-09-25T09:29:54.627Z"
+}

@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "worktreeRoot": "/Users/lovelogic/Documents/GitHub/secretforge-ai",
+  "gitDir": "/Users/lovelogic/Documents/GitHub/secretforge-ai/.git",
+  "indexMtimeMs": 1790322663354.0579,
+  "indexSize": 14461,
+  "map": "  src/: index\n  src/__tests__/: analyzeDependencies.test, api.integration.test, encryption.test, agents, security.test\n  src/middleware/: auth, errorHandler, rateLimit\n  src/routes/: auth, billing\n  src/schemas/: validation\n  src/security/: envelope, passwords, timingSafe\n  src/services/: stripe\n  src/types/: hono.d\n  src/utils/: logger\n  (root): vitest.config",
+  "createdAt": "2026-09-25T09:29:03.177Z"
+}
