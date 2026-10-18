@@ -1,16 +1,50 @@
 {
   "name": "@secretforge/cli",
   "version": "1.0.0",
+  "description": "AI-powered CLI for intelligent API key management and secret provisioning",
   "type": "module",
   "bin": {
     "secretforge": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "CLI_README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
+  },
+  "keywords": [
+    "secrets",
+    "api-keys",
+    "credentials",
+    "security",
+    "ai",
+    "llm",
+    "ollama",
+    "cli",
+    "developer-tools",
+    "key-management",
+    "secret-management"
+  ],
+  "author": "LoveLogicAILLC",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LoveLogicAILLC/secretforge-ai.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/LoveLogicAILLC/secretforge-ai/issues"
+  },
+  "homepage": "https://github.com/LoveLogicAILLC/secretforge-ai/tree/main/packages/cli#readme",
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "chalk": "^5.3.0",

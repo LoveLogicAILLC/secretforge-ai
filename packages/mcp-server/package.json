@@ -1,11 +1,17 @@
 {
   "name": "@secretforge/mcp-server",
   "version": "1.0.0",
+  "description": "Model Context Protocol (MCP) server for SecretForge AI integration with Claude Code and AI assistants",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "secretforge-mcp": "dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/index.ts",
@@ -13,6 +19,34 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "anthropic",
+    "ai-tools",
+    "secrets",
+    "api-keys",
+    "security",
+    "llm",
+    "agent",
+    "developer-tools",
+    "key-management"
+  ],
+  "author": "LoveLogicAILLC",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LoveLogicAILLC/secretforge-ai.git",
+    "directory": "packages/mcp-server"
+  },
+  "bugs": {
+    "url": "https://github.com/LoveLogicAILLC/secretforge-ai/issues"
+  },
+  "homepage": "https://github.com/LoveLogicAILLC/secretforge-ai/tree/main/packages/mcp-server#readme",
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
