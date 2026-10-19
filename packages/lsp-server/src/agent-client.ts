@@ -84,6 +84,14 @@ export class AgentClient {
     return new Error(`${response.status} ${response.statusText} ${detail}`.trim());
   }
 
+  /** An aborted fetch surfaces as AbortError; report it as the timeout it is. */
+  private static rethrow(error: unknown): never {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error("SecretForge API request timed out");
+    }
+    throw error;
+  }
+
   private async request<T>(
     path: string,
     options: { method?: string; body?: unknown } = {}
@@ -109,11 +117,7 @@ export class AgentClient {
 
       return (await response.json()) as T;
     } catch (error) {
-      // An aborted fetch surfaces as AbortError; report it as the timeout it is.
-      if (error instanceof Error && error.name === "AbortError") {
-        throw new Error("SecretForge API request timed out");
-      }
-      throw error;
+      AgentClient.rethrow(error);
     } finally {
       clearTimeout(timeout);
     }
