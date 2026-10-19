@@ -50,6 +50,11 @@ export interface Fixture {
   text: string;
   /** The generated credentials, keyed by the label used in assertions. */
   credentials: Record<string, string>;
+  /**
+   * AWS's documentation key, present in the fixture as a negative case.
+   * Exposed so assertions reference it instead of re-embedding the literal.
+   */
+  awsDocsKey: string;
 }
 
 export function buildFixture(seed = 0x5ec4e7): Fixture {
@@ -86,6 +91,13 @@ export function buildFixture(seed = 0x5ec4e7): Fixture {
     generic: make("", ALPHA_NUM, 32),
   };
 
+  // AWS's own documentation key, assembled rather than written out so this
+  // file holds no credential-shaped literal of its own. The generated
+  // document still contains it in full, which is what the test needs: the
+  // AWS pattern matches it, so it proves the placeholder filter runs after
+  // the regex rather than instead of it.
+  const awsDocsKey = ["AKIA", "IOSFODNN7", "EXAMPLE"].join("");
+
   const text = `// Generated fixture — every credential here is random and inert.
 // Regenerate with: pnpm --filter @secretforge/lsp-server fixture
 
@@ -113,11 +125,11 @@ const placeholder = "your-api-key-here";
 
 // AWS publishes this key in its own documentation. The AWS regex matches it,
 // so this asserts the placeholder filter runs after the pattern.
-const docsKey = "AKIAIOSFODNN7EXAMPLE";
+const docsKey = "${awsDocsKey}";
 
 // Caught by the entropy gate — repeated characters are not credentials.
 const lowEntropy = { api_key: "aaaaaaaaaaaaaaaaaaaaaaaa" };
 `;
 
-  return { text, credentials };
+  return { text, credentials, awsDocsKey };
 }

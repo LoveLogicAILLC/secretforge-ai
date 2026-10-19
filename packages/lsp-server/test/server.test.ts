@@ -230,7 +230,7 @@ describe("SecretForge language server", () => {
     expect(flagged.some((v) => v.includes("your-api-key-here"))).toBe(false);
     // AWS ships this key in its own docs; the AWS pattern matches it, so this
     // asserts the placeholder filter runs after the regex.
-    expect(flagged).not.toContain("AKIAIOSFODNN7EXAMPLE");
+    expect(flagged).not.toContain(FIXTURE.awsDocsKey);
     // Repeated characters fall under the entropy threshold.
     expect(flagged.some((v) => v.includes("aaaaaaaa"))).toBe(false);
   });
