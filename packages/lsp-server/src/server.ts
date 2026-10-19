@@ -30,8 +30,8 @@ import {
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
 
-import { SECRET_PATTERNS, shouldReport, getKnownServices } from "./patterns";
 import { AgentClient } from "./agent-client";
+import { SECRET_PATTERNS, shouldReport, getKnownServices } from "./patterns";
 import { DiagnosticData, LSPInitializationOptions } from "./types";
 
 const connection = createConnection(ProposedFeatures.all);
