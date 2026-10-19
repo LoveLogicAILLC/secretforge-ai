@@ -6,6 +6,7 @@
  */
 
 import { DiagnosticSeverity } from "vscode-languageserver/node";
+
 import { SecretPattern } from "./types";
 
 export const SECRET_PATTERNS: SecretPattern[] = [

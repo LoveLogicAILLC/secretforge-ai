@@ -5,10 +5,12 @@
  * Requires `pnpm build` first — it runs against dist/server.js.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+
 import { buildFixture } from "./fixture";
 
 const SERVER = path.join(__dirname, "..", "dist", "server.js");
@@ -25,17 +27,60 @@ const OFFLINE_API = "http://127.0.0.1:9";
 const SEVERITY_ERROR = 1;
 const SEVERITY_WARNING = 2;
 
+interface Range {
+  start: { line: number; character: number };
+}
+
 interface Diagnostic {
   severity: number;
-  range: { start: { line: number; character: number } };
+  range: Range;
   message: string;
   data: { pattern: string; service: string; masked: string; fullMatch: string };
+}
+
+/** Any JSON-RPC frame off the wire. Method-specific shapes extend this. */
+interface RpcMessage {
+  id?: number;
+  method?: string;
+}
+
+interface InitializeResponse extends RpcMessage {
+  result: {
+    capabilities: {
+      hoverProvider: boolean;
+      codeActionProvider: unknown;
+      completionProvider: unknown;
+      executeCommandProvider: { commands: string[] };
+    };
+  };
+}
+
+interface PublishDiagnosticsNotification extends RpcMessage {
+  params: { uri: string; diagnostics: Diagnostic[] };
+}
+
+interface CodeAction {
+  title: string;
+  isPreferred?: boolean;
+  edit?: { changes: Record<string, Array<{ newText: string }>> };
+}
+
+interface CodeActionResponse extends RpcMessage {
+  result: CodeAction[];
+}
+
+interface HoverResponse extends RpcMessage {
+  result: { contents: { value: string } };
+}
+
+interface CompletionResponse extends RpcMessage {
+  result: { items?: Array<{ label: string }> } | Array<{ label: string }>;
 }
 
 class LspHarness {
   private proc: ChildProcessWithoutNullStreams;
   private buffer = Buffer.alloc(0);
-  private messages: any[] = [];
+  private messages: RpcMessage[] = [];
 
   constructor() {
     this.proc = spawn("node", [SERVER, "--stdio"], {
@@ -72,15 +117,20 @@ class LspHarness {
     );
   }
 
-  /** Polls until `predicate` matches a received message, or the timeout hits. */
-  async waitFor<T = any>(
-    predicate: (message: any) => boolean,
+  /**
+   * Polls until `predicate` matches a received message, or the timeout hits.
+   *
+   * The caller names the response shape it expects, since a JSON-RPC body
+   * varies by method and the harness cannot know it.
+   */
+  async waitFor<T extends RpcMessage = RpcMessage>(
+    predicate: (message: RpcMessage) => boolean,
     timeoutMs = 5000
   ): Promise<T> {
     const deadline = Date.now() + timeoutMs;
     for (;;) {
       const found = this.messages.find(predicate);
-      if (found) return found;
+      if (found) return found as T;
       if (Date.now() > deadline) {
         throw new Error("Timed out waiting for LSP message");
       }
@@ -131,7 +181,7 @@ describe("SecretForge language server", () => {
       },
     });
 
-    const published = await lsp.waitFor(
+    const published = await lsp.waitFor<PublishDiagnosticsNotification>(
       (m) => m.method === "textDocument/publishDiagnostics"
     );
     diagnostics = published.params.diagnostics;
@@ -140,7 +190,7 @@ describe("SecretForge language server", () => {
   afterAll(() => lsp?.dispose());
 
   it("advertises the capabilities editors rely on", async () => {
-    const init = await lsp.waitFor((m) => m.id === 1);
+    const init = await lsp.waitFor<InitializeResponse>((m) => m.id === 1);
     const caps = init.result.capabilities;
 
     expect(caps.hoverProvider).toBe(true);
@@ -214,16 +264,14 @@ describe("SecretForge language server", () => {
       },
     });
 
-    const response = await lsp.waitFor((m) => m.id === 2);
-    const titles = response.result.map((a: { title: string }) => a.title);
+    const response = await lsp.waitFor<CodeActionResponse>((m) => m.id === 2);
+    const titles = response.result.map((a) => a.title);
 
     expect(titles).toContain("Replace with process.env.AWS_API_KEY");
-    expect(titles.some((t: string) => t.includes("Provision"))).toBe(true);
+    expect(titles.some((t) => t.includes("Provision"))).toBe(true);
 
-    const preferred = response.result.find(
-      (a: { isPreferred?: boolean }) => a.isPreferred
-    );
-    expect(preferred.edit.changes[fixtureUri][0].newText).toBe(
+    const preferred = response.result.find((a) => a.isPreferred);
+    expect(preferred?.edit?.changes[fixtureUri][0].newText).toBe(
       "process.env.AWS_API_KEY"
     );
   });
@@ -240,7 +288,7 @@ describe("SecretForge language server", () => {
       },
     });
 
-    const response = await lsp.waitFor((m) => m.id === 3);
+    const response = await lsp.waitFor<HoverResponse>((m) => m.id === 3);
     const value = response.result.contents.value;
 
     expect(value).toContain("AWS Access Key");
@@ -264,10 +312,11 @@ describe("SecretForge language server", () => {
       },
     });
 
-    const response = await lsp.waitFor((m) => m.id === 4);
-    const labels = (response.result.items ?? response.result).map(
-      (i: { label: string }) => i.label
-    );
+    const response = await lsp.waitFor<CompletionResponse>((m) => m.id === 4);
+    // A completion response is either a bare array or a { items } wrapper.
+    const { result } = response;
+    const items = Array.isArray(result) ? result : (result.items ?? []);
+    const labels = items.map((i) => i.label);
 
     expect(labels).toContain("STRIPE_API_KEY");
     expect(labels).toContain("AWS_API_KEY");
