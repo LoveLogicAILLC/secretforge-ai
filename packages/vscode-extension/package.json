@@ -33,12 +33,14 @@
         "secretforge.apiUrl": {
           "type": "string",
           "default": "https://secretforge-ai.workers.dev",
-          "description": "SecretForge API endpoint."
+          "scope": "machine",
+          "markdownDescription": "SecretForge API endpoint. Must be `https`, except `localhost` for development.\n\nMachine-scoped on purpose: detected credentials are sent here for validation, so a workspace — that is, a cloned repository — must not be able to redirect it."
         },
         "secretforge.apiKey": {
           "type": "string",
           "default": "",
-          "markdownDescription": "API key used to authenticate with SecretForge. Leave empty to run detection locally without AI-backed actions."
+          "scope": "machine",
+          "markdownDescription": "API key used to authenticate with SecretForge. Leave empty to run detection locally without AI-backed actions.\n\nMachine-scoped so a workspace cannot read or replace it."
         },
         "secretforge.enableDiagnostics": {
           "type": "boolean",

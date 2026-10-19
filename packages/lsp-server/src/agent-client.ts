@@ -9,13 +9,63 @@ import { ValidationResult, ProvisionedSecret } from "./types";
 
 const REQUEST_TIMEOUT_MS = 10_000;
 
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+
+/**
+ * Validates the configured endpoint before anything is sent to it.
+ *
+ * The endpoint arrives through LSP `initializationOptions`, which any editor
+ * can set — in VS Code it comes from a setting, and a setting can be supplied
+ * by the workspace, i.e. by a cloned repository. Since `validateSecret` posts
+ * a detected credential to this host, an unvalidated endpoint turns opening a
+ * hostile repository into credential exfiltration.
+ *
+ * Plain HTTP is accepted only for loopback, so `wrangler dev` still works.
+ */
+export function assertSafeApiUrl(raw: string): string {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error(`SecretForge endpoint is not a valid URL: ${raw}`);
+  }
+
+  if (url.protocol === "https:") {
+    return url.origin + url.pathname.replace(/\/+$/, "");
+  }
+
+  if (url.protocol === "http:" && LOOPBACK_HOSTS.has(url.hostname)) {
+    return url.origin + url.pathname.replace(/\/+$/, "");
+  }
+
+  throw new Error(
+    `SecretForge endpoint must use https (got ${url.protocol}//${url.hostname}); ` +
+      "plain http is allowed only for localhost"
+  );
+}
+
 export class AgentClient {
   private readonly apiUrl: string;
   private readonly apiKey?: string;
+  /** Set when the endpoint failed validation; no request is ever attempted. */
+  private readonly rejectedReason?: string;
 
   constructor(apiUrl: string, apiKey?: string) {
-    this.apiUrl = apiUrl.replace(/\/+$/, "");
     this.apiKey = apiKey;
+
+    try {
+      this.apiUrl = assertSafeApiUrl(apiUrl);
+    } catch (error) {
+      // Detection and the env-var fix are local, so a rejected endpoint
+      // disables only the AI-backed calls rather than the whole server.
+      this.apiUrl = "";
+      this.rejectedReason = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  /** Why the endpoint was rejected, if it was. */
+  get unavailableReason(): string | undefined {
+    return this.rejectedReason;
   }
 
   private buildHeaders(): Record<string, string> {
@@ -38,6 +88,10 @@ export class AgentClient {
     path: string,
     options: { method?: string; body?: unknown } = {}
   ): Promise<T> {
+    if (this.rejectedReason) {
+      throw new Error(this.rejectedReason);
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
