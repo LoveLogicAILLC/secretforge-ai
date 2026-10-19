@@ -16,6 +16,16 @@ interface SecretMetadata {
   lastRotated?: string;
 }
 
+interface Secret extends SecretMetadata {
+  id: string;
+  userId: string;
+  value?: string;
+}
+
+interface CreateSecretResponse {
+  secret: Secret;
+}
+
 interface MCPContext {
   projectPath: string;
   dependencies: Record<string, string>;
@@ -168,12 +178,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "create_secret": {
         const data = CreateSecretSchema.parse(args);
-        const secret = await createSecret(data);
+        const response = await createSecret(data);
         return {
           content: [
             {
               type: "text",
-              text: `Secret created successfully: ${(secret as any).id}`,
+              text: `Secret created successfully: ${response.secret.id}`,
             },
           ],
         };
@@ -356,7 +366,7 @@ async function getGitRemote(projectPath: string): Promise<string | undefined> {
   }
 }
 
-async function createSecret(data: z.infer<typeof CreateSecretSchema>) {
+async function createSecret(data: z.infer<typeof CreateSecretSchema>): Promise<CreateSecretResponse> {
   // Integrate with Cloudflare Workers API
   const response = await fetch("http://localhost:8787/api/secrets", {
     method: "POST",
@@ -364,7 +374,7 @@ async function createSecret(data: z.infer<typeof CreateSecretSchema>) {
     body: JSON.stringify(data),
   });
 
-  return response.json();
+  return response.json() as Promise<CreateSecretResponse>;
 }
 
 async function rotateSecret(secretId: string) {
