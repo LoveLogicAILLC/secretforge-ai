@@ -1,0 +1,101 @@
+{
+  "name": "secretforge-ai",
+  "displayName": "SecretForge AI",
+  "description": "AI-powered secret detection and management, inline in your editor",
+  "version": "1.0.0",
+  "publisher": "lovelogicai",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Linters",
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "secrets",
+    "security",
+    "api keys",
+    "secret scanning",
+    "ai"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "SecretForge AI",
+      "properties": {
+        "secretforge.apiUrl": {
+          "type": "string",
+          "default": "https://secretforge-ai.workers.dev",
+          "description": "SecretForge API endpoint."
+        },
+        "secretforge.apiKey": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "API key used to authenticate with SecretForge. Leave empty to run detection locally without AI-backed actions."
+        },
+        "secretforge.enableDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Flag detected secrets inline."
+        },
+        "secretforge.enableHover": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show credential details on hover."
+        },
+        "secretforge.enableAutocomplete": {
+          "type": "boolean",
+          "default": true,
+          "description": "Suggest credential environment variables."
+        },
+        "secretforge.enableCodeActions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Offer quick fixes for detected secrets."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "secretforge.askAI",
+        "title": "SecretForge: Ask AI about secret management",
+        "category": "SecretForge"
+      },
+      {
+        "command": "secretforge.scanWorkspace",
+        "title": "SecretForge: Scan open files for secrets",
+        "category": "SecretForge"
+      },
+      {
+        "command": "secretforge.restartServer",
+        "title": "SecretForge: Restart language server",
+        "category": "SecretForge"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "build": "tsc -p ./",
+    "compile": "tsc -p ./",
+    "dev": "tsc -watch -p ./",
+    "watch": "tsc -watch -p ./",
+    "typecheck": "tsc --noEmit -p ./",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "@vscode/vsce": "^2.22.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}
