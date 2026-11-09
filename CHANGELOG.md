@@ -23,6 +23,7 @@ All notable changes to this repository are documented in this file.
 - CLI dependency upgrades: `commander` `^12.0.0` to `^15.0.0`, `ora` `^8.0.1` to `^9.4.1`,
   `vitest` and `@vitest/coverage-v8` `^1.0.0` to `^4.1.0`. `@types/inquirer` was removed because
   `inquirer@13` ships its own types.
+- `@secretforge/shield-action`: `@anthropic-ai/sdk` `^0.80.0` to `^0.128.0`.
 - The CLI's `add` command uses the `select` prompt type for the environment choice
   (the `list` type was renamed in `inquirer@13`).
 
