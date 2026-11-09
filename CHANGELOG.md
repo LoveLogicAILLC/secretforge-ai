@@ -36,6 +36,15 @@ All notable changes to this repository are documented in this file.
   previously reported `undefined`. HTTP failures are now surfaced.
 - `pnpm deploy` is a pnpm built-in and fails for the API package; the docs now use
   `pnpm run deploy`.
+- `@secretforge/api` compiles again (25 TypeScript errors). Handlers read request bodies through a
+  new `getValidated(c, schema)` helper typed by the route's Zod schema, `:id` path parameters go
+  through `requireParam`, the CORS preflight returns `c.body(null, 204)`, and `SecretAgent` uses the
+  `agents` `state` property with an explicit state type instead of the removed `getState()`.
+- `@secretforge/web` builds again: the landing page imported `lucide-react` and `@/components/ui/*`
+  files that were never committed. Added `lucide-react`, the `tailwindcss-animate` plugin the
+  Tailwind config already required, and small dependency-free `Badge`, `Button`, `Card` and `Input`
+  components. The `Github` brand icon (removed in `lucide-react` 1.x) was replaced by `GitBranch`.
+- `@secretforge/shield-action`'s test script no longer fails when there are no test files.
 
 ### Security
 

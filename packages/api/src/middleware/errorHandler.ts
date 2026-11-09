@@ -1,5 +1,6 @@
 import { Context } from 'hono';
 import { HTTPException } from 'hono/http-exception';
+import type { z } from 'zod';
 
 export interface ErrorResponse {
   error: {
@@ -132,6 +133,25 @@ function getErrorCode(status: number): string {
 }
 
 /**
+ * Typed accessor for the body validated by `validateRequest`. Passing the same schema used by the
+ * middleware ties the handler's destructuring to that schema's inferred type.
+ */
+export function getValidated<S extends z.ZodTypeAny>(c: Context, _schema: S): z.infer<S> {
+  return c.get('validatedData') as z.infer<S>;
+}
+
+/**
+ * Read a required path parameter, rejecting the request when it is missing.
+ */
+export function requireParam(c: Context, name: string): string {
+  const value = c.req.param(name);
+  if (!value) {
+    throw new HTTPException(400, { message: `Missing path parameter: ${name}` });
+  }
+  return value;
+}
+
+/**
  * Request validation middleware
  * Validates request body against Zod schema
  */
@@ -225,7 +245,7 @@ export function corsMiddleware() {
     c.header('Access-Control-Max-Age', '86400');
 
     if (c.req.method === 'OPTIONS') {
-      return c.text('', 204);
+      return c.body(null, 204);
     }
 
     await next();
