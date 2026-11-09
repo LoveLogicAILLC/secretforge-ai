@@ -82,7 +82,7 @@ SecretForge AI is an **AI-powered secret management platform** that automaticall
 
 ### Prerequisites
 
-- **Node.js** 20+
+- **Node.js** 22.12+
 - **pnpm** 8+
 - **Cloudflare Account** (for deployment)
 - **Ollama** (optional, for local CLI AI)
@@ -271,7 +271,7 @@ See `.env.example` for full list. Key variables:
 
 | Layer    | Technology                        |
 | -------- | --------------------------------- |
-| Runtime  | TypeScript, Node.js 20+           |
+| Runtime  | TypeScript, Node.js 22.12+        |
 | Monorepo | Turborepo                         |
 | API      | Hono, Cloudflare Workers          |
 | Storage  | D1 (SQLite), KV, Vectorize        |

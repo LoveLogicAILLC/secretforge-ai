@@ -10,6 +10,8 @@ import {
   corsMiddleware,
   notFoundHandler,
   validateRequest,
+  getValidated,
+  requireParam,
 } from './middleware/errorHandler';
 import {
   createSecretSchema,
@@ -90,7 +92,7 @@ app.post(
   validateRequest(analyzeProjectSchema),
   async (c) => {
     const user = c.get('user');
-    const { dependencies } = c.get('validatedData');
+    const { dependencies } = getValidated(c, analyzeProjectSchema);
 
     const detectedServices = analyzeDependencies(dependencies || {});
     const recommendations = await getRecommendations(c.env, detectedServices);
@@ -115,7 +117,7 @@ app.post(
   validateRequest(createSecretSchema),
   async (c) => {
     const user = c.get('user');
-    const { service, environment, scopes, value } = c.get('validatedData');
+    const { service, environment, scopes, value } = getValidated(c, createSecretSchema);
 
     // Check tier limits
     await enforceTierLimits(c.env.DATABASE, user.userId, user.tier);
@@ -187,7 +189,7 @@ app.post(
 // Get secret
 app.get('/api/secrets/:id', auth, tierRateLimit(), async (c) => {
   const user = c.get('user');
-  const secretId = c.req.param('id');
+  const secretId = requireParam(c, 'id');
 
   const secretData = await c.env.SECRETS_VAULT.get(`secret:${secretId}`);
 
@@ -259,7 +261,7 @@ app.post(
   validateRequest(rotateSecretSchema),
   async (c) => {
     const user = c.get('user');
-    const secretId = c.req.param('id');
+    const secretId = requireParam(c, 'id');
 
     const secretData = await c.env.SECRETS_VAULT.get(`secret:${secretId}`);
 
@@ -278,7 +280,7 @@ app.post(
     // the stored value with a random `sk_<service>_...` string, silently
     // overwriting e.g. a user's actual Stripe key with garbage. Imported
     // secrets now require the new provider-issued value in the request body.
-    const { value: suppliedValue } = c.get('validatedData') as { value?: string };
+    const { value: suppliedValue } = getValidated(c, rotateSecretSchema);
     if (!suppliedValue && secret.origin !== 'generated') {
       throw new HTTPException(409, {
         message:
@@ -327,7 +329,7 @@ app.post(
 // Delete secret
 app.delete('/api/secrets/:id', auth, tierRateLimit(), async (c) => {
   const user = c.get('user');
-  const secretId = c.req.param('id');
+  const secretId = requireParam(c, 'id');
 
   const secretData = await c.env.SECRETS_VAULT.get(`secret:${secretId}`);
 
@@ -392,7 +394,7 @@ app.get(
 // Validate security compliance
 app.get('/api/secrets/:id/validate', auth, tierRateLimit(), async (c) => {
   const user = c.get('user');
-  const secretId = c.req.param('id');
+  const secretId = requireParam(c, 'id');
   const framework = c.req.query('framework') || 'SOC2';
   if (!['SOC2', 'GDPR', 'HIPAA', 'PCI-DSS'].includes(framework)) {
     return c.json({ error: 'Unsupported framework' }, 400);
@@ -431,7 +433,7 @@ app.post(
   validateRequest(chatMessageSchema),
   async (c) => {
     const user = c.get('user');
-    const { message } = c.get('validatedData');
+    const { message } = getValidated(c, chatMessageSchema);
 
     const agent = c.env.SECRET_AGENT.get(c.env.SECRET_AGENT.idFromName(user.userId));
     const response = await agent.fetch(
@@ -646,7 +648,11 @@ async function trackUsage(db: D1Database, userId: string, eventType: string): Pr
 // AI Agent for intelligent secret management
 // ============================================================================
 
-export class SecretAgent extends Agent<Env> {
+interface SecretAgentState {
+  lastRequest?: { service: string; environment: string; timestamp: number };
+}
+
+export class SecretAgent extends Agent<Env, SecretAgentState> {
   async onRequest(request: Request) {
     const { message } = (await request.json()) as any;
 
@@ -657,7 +663,7 @@ export class SecretAgent extends Agent<Env> {
       messages: [
         {
           role: 'system',
-          content: `You are SecretForge AI, an intelligent API key management assistant. Help users provision, rotate, and manage API keys securely. Current context: ${JSON.stringify(await this.getState())}`,
+          content: `You are SecretForge AI, an intelligent API key management assistant. Help users provision, rotate, and manage API keys securely. Current context: ${JSON.stringify(this.state ?? {})}`,
         },
         { role: 'user', content: message },
       ],

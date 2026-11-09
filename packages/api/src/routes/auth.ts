@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { auth, createJWT, generateApiKey } from '../middleware/auth';
 import { hashPassword, verifyPassword } from '../security/passwords';
-import { validateRequest } from '../middleware/errorHandler';
+import { getValidated, validateRequest } from '../middleware/errorHandler';
 import {
   createUserSchema,
   loginSchema,
@@ -24,7 +24,7 @@ const authRouter = new Hono<{ Bindings: AuthEnv }>();
  * POST /auth/signup
  */
 authRouter.post('/signup', validateRequest(createUserSchema), async (c) => {
-  const { email, password } = c.get('validatedData');
+  const { email, password } = getValidated(c, loginSchema);
   // Every account starts on the free tier. Paid tiers are only ever granted by
   // the Stripe webhook after a successful checkout; accepting `tier` from the
   // request body let anyone self-assign `enterprise`.
@@ -87,7 +87,7 @@ authRouter.post('/signup', validateRequest(createUserSchema), async (c) => {
  * POST /auth/login
  */
 authRouter.post('/login', validateRequest(loginSchema), async (c) => {
-  const { email, password } = c.get('validatedData');
+  const { email, password } = getValidated(c, createUserSchema);
 
   // Find user
   const user = await c.env.DATABASE.prepare(
@@ -179,7 +179,7 @@ authRouter.post('/api-keys', auth, validateRequest(createApiKeySchema), async (c
     throw new HTTPException(401, { message: 'Not authenticated' });
   }
 
-  const { name, scopes, expiresIn } = c.get('validatedData');
+  const { name, scopes, expiresIn } = getValidated(c, createApiKeySchema);
 
   // Generate API key
   const apiKey = await generateApiKey();

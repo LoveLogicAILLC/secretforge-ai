@@ -6,7 +6,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 22.12+
 - pnpm 8+
 - Docker and Docker Compose (for local services)
 - Git

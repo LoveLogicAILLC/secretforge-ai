@@ -156,7 +156,7 @@ export class PerformanceMonitor {
     if (duration > 1000) {
       logger.warn(`Slow operation detected: ${operation}`, {
         operation,
-        duration: `${duration}ms`,
+        duration,
       });
     }
   }
