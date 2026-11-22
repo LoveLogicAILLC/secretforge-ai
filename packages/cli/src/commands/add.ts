@@ -48,7 +48,7 @@ export async function addCommand(
       validate: (input: string) => input.length > 0 || 'Secret value is required',
     },
     {
-      type: 'list',
+      type: 'select',
       name: 'environment',
       message: 'Environment:',
       choices: ['dev', 'staging', 'prod'],

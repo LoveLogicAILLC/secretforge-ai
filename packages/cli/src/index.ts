@@ -121,6 +121,9 @@ program
     });
 
     const data = (await response.json()) as any;
+    if (!data?.secret?.id || !data?.secret?.value) {
+      throw new Error('Invalid secret response');
+    }
     spinner.succeed(`API key created: ${data.secret.id}`);
 
     // Update .env file
@@ -224,6 +227,9 @@ async function provisionKey(service: string, context: CLIContext) {
     });
 
     const data = (await response.json()) as any;
+    if (!data?.secret?.value) {
+      throw new Error('Invalid secret response: missing secret value');
+    }
     await updateEnvFile(`${service.toUpperCase()}_API_KEY`, data.secret.value);
 
     spinner.succeed(`${service} key provisioned`);
