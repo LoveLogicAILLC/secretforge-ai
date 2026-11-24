@@ -6,9 +6,9 @@ import ora from 'ora';
 import inquirer from 'inquirer';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { parseDotenv, serializeEnvLine } from './format/dotenv.js';
 import { writePrivateFile } from './cli/vault.js';
 import { CLI_VERSION } from './commands/scan.js';
+import { parseDotenv, serializeEnvLine } from './format/dotenv.js';
 import { readProvisionResponse } from './provision.js';
 
 interface CLIContext {
