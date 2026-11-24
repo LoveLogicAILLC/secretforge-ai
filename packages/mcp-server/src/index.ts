@@ -383,9 +383,10 @@ async function rotateSecret(secretId: string) {
 }
 
 async function searchDocumentation(service: string, query: string) {
-  const response = await fetch(
-    `http://localhost:8787/api/docs/search?service=${encodeURIComponent(service)}&q=${encodeURIComponent(query)}`
-  );
+  const url = new URL('http://localhost:8787/api/docs/search');
+  url.searchParams.set('service', service);
+  url.searchParams.set('q', query);
+  const response = await fetch(url);
   return response.json() as Promise<any>;
 }
 
