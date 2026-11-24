@@ -92,6 +92,23 @@ export class AgentClient {
     throw error;
   }
 
+  /**
+   * Joins an internal API path onto the validated endpoint and refuses any
+   * result that would leave the configured origin. Paths are fixed strings in
+   * this class; dynamic segments are encoded by the caller.
+   */
+  private resolveTarget(path: string): string {
+    if (!path.startsWith('/')) {
+      throw new Error(`SecretForge API path must be absolute: ${path}`);
+    }
+    const base = new URL(this.apiUrl);
+    const target = new URL(`${this.apiUrl}${path}`);
+    if (target.origin !== base.origin) {
+      throw new Error('SecretForge API request would leave the configured endpoint');
+    }
+    return target.toString();
+  }
+
   private async request<T>(
     path: string,
     options: { method?: string; body?: unknown } = {}
@@ -100,11 +117,15 @@ export class AgentClient {
       throw new Error(this.rejectedReason);
     }
 
+    const target = this.resolveTarget(path);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      const response = await fetch(`${this.apiUrl}${path}`, {
+      // The host was validated by assertSafeApiUrl and resolveTarget pins every
+      // request to that origin, so the URL is not attacker-controlled here.
+      // nosemgrep: rules_lgpl_javascript_ssrf_rule-node-ssrf
+      const response = await fetch(target, {
         method: options.method ?? 'GET',
         headers: this.buildHeaders(),
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
@@ -155,10 +176,13 @@ export class AgentClient {
   }
 
   async askAgent(agent: string, question: string): Promise<string> {
-    const result = await this.request<{ answer?: string; result?: string }>(`/api/agent/${agent}`, {
-      method: 'POST',
-      body: { action: 'answer_query', payload: { question } },
-    });
+    const result = await this.request<{ answer?: string; result?: string }>(
+      `/api/agent/${encodeURIComponent(agent)}`,
+      {
+        method: 'POST',
+        body: { action: 'answer_query', payload: { question } },
+      }
+    );
     return result.answer ?? result.result ?? 'No response from agent.';
   }
 

@@ -370,21 +370,21 @@ async function createSecret(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create secret: HTTP ${response.status}`);
+    throw new Error(`Secret provisioning request was rejected (HTTP ${response.status})`);
   }
 
   return (await response.json()) as CreateSecretResponse;
 }
 
 async function rotateSecret(secretId: string) {
-  await fetch(`http://localhost:8787/api/secrets/${secretId}/rotate`, {
+  await fetch(`http://localhost:8787/api/secrets/${encodeURIComponent(secretId)}/rotate`, {
     method: 'POST',
   });
 }
 
 async function searchDocumentation(service: string, query: string) {
   const response = await fetch(
-    `http://localhost:8787/api/docs/search?service=${service}&q=${encodeURIComponent(query)}`
+    `http://localhost:8787/api/docs/search?service=${encodeURIComponent(service)}&q=${encodeURIComponent(query)}`
   );
   return response.json() as Promise<any>;
 }
