@@ -86,7 +86,7 @@ class LspHarness {
     this.proc = spawn('node', [SERVER, '--stdio'], {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
-    this.proc.stdout.on('data', (chunk) => this.consume(chunk));
+    this.proc.stdout.on('data', (chunk: Buffer) => this.consume(chunk));
   }
 
   private consume(chunk: Buffer): void {
@@ -104,7 +104,7 @@ class LspHarness {
 
       const body = this.buffer.subarray(start, start + length).toString();
       this.buffer = this.buffer.subarray(start + length);
-      this.messages.push(JSON.parse(body));
+      this.messages.push(JSON.parse(body) as RpcMessage);
     }
   }
 

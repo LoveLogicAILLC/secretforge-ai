@@ -78,9 +78,12 @@ export interface Fixture {
   awsDocsKey: string;
 }
 
-export function buildFixture(seed = 0x5ec4e7): Fixture {
-  const random = seededRandom(seed);
+interface ValueGenerators {
+  draw: (charset: string, length: number) => string;
+  make: (prefix: string, charset: string, length: number) => string;
+}
 
+function createGenerators(random: () => number): ValueGenerators {
   const draw = (charset: string, length: number): string => {
     let out = '';
     for (let i = 0; i < length; i++) {
@@ -98,6 +101,12 @@ export function buildFixture(seed = 0x5ec4e7): Fixture {
     }
     throw new Error(`Could not generate a clean value for prefix "${prefix}"`);
   };
+
+  return { draw, make };
+}
+
+export function buildFixture(seed = 0x5ec4e7): Fixture {
+  const { draw, make } = createGenerators(seededRandom(seed));
 
   const credentials: Record<string, string> = {
     aws: make('AKIA', UPPER_NUM, 16),
