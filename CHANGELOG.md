@@ -1,14 +1,60 @@
-# SecretForge CLI Change Log
+# Changelog
 
-## 2025-10-07: Modernization, refactoring, and dependency upgrade of secretforge-cli
+All notable changes to this repository are documented in this file.
 
-Major CLI modernization complete. `sf.ts` is now the primary CLI entry point; the legacy `index.ts` (campaign/chat/rotate/list) was merged into it and the duplicate/ conflicting init logic consolidated into a single shared init flow to eliminate redundancy. The `request` command now writes the newly provisioned API key to `.env` (fixing a bug where keys were created but never persisted). Report validation (`data.secret.id/value`) added to both `request` and `provisionKey` to catch malformed API responses.
+## Unreleased
 
-Dependency upgrades applied (package.json):
-- CLI: commander `^12.0.0` → `^15.0.0`, ora `^8.0.1` → `^9.4.1`, inquirer `^13.3.2` (unchanged), vitest `^1.0.0` → `^4.1.0`
-- shared/other (via pnpm-lock via merge of Dependabot PRs): better-sqlite3 `12.6.2`→`12.8.0`, @anthropic-ai/sdk `0.80.0`→`0.128.0`, next `14.2.35`→`16.3.6` (web), tailwind `3.4.19`→`4.3.3`, wrangler `3.114.17`→`4.76.0`, OpenAPI/idiom updates.
+### Added
 
-Build verified: `tsc --noEmit -p packages/cli/tsconfig.json` passes; `dist/` output present (index.js, sf.js, index.d.ts, scan/report/baseline/safir support, storage, crypto, format/dotenv, CLI_README.md). Common syntax pitfalls avoided — no circular imports, imports pinned via import/client-resolve (no relative `next`/`node_modules` gaps).
+- `@secretforge/lsp-server`: a Language Server Protocol server that detects hard-coded secrets in
+  any LSP-capable editor (diagnostics, quick fixes, hover, env-var completion), plus the
+  `secretforge-ai` VS Code extension that bundles it.
+- `AGENTS.md`: a short guide to this repository's rules for AI agents and contributors.
+- `NPM_PUBLISHING_GUIDE.md` and `CLOUDFLARE_SETUP.md`: publishing and Cloudflare deployment guides,
+  verified against the current code.
+- npm metadata (description, keywords, license, repository, `files`) and a regular `LICENSE` file for
+  `@secretforge/shared`, `@secretforge/cli` and `@secretforge/mcp-server`. `@secretforge/shared` is a
+  runtime dependency of the CLI, so it must be published first.
 
-Note: `git status --after`/`git status --after` commands were unavailable (bug in git version与环境), and tsc's conflicting-cache behavior required the noEmit flag; the package's own lint/tsc tooling skipped real diagnostics (project aliases). Overall: no compile errors, working tree clean, all components compiling.
-</content>
+### Changed
+
+- **Breaking:** the CLI now requires Node.js `>=22.12.0` (`commander@15`). `ora@9` requires
+  Node.js 20 or newer. The README and `WARP.md` prerequisites were updated to match.
+- CLI dependency upgrades: `commander` `^12.0.0` to `^15.0.0`, `ora` `^8.0.1` to `^9.4.1`,
+  `vitest` and `@vitest/coverage-v8` `^1.0.0` to `^4.1.0`. `@types/inquirer` was removed because
+  `inquirer@13` ships its own types.
+- `@secretforge/shield-action`: `@anthropic-ai/sdk` `^0.80.0` to `^0.128.0`.
+- The CLI's `add` command uses the `select` prompt type for the environment choice
+  (the `list` type was renamed in `inquirer@13`).
+
+### Fixed
+
+- `secretforge request` and the `init` provisioning flow validate the API response, report HTTP
+  failures, and stop the spinner on error. They no longer write the API's `[ENCRYPTED]`
+  placeholder into `.env.local` as if it were a credential.
+- `.env.local` is the file the provisioned key is written to; the success message now says so.
+- The MCP server's `create_secret` tool reads the new secret's ID from `response.secret.id`; it
+  previously reported `undefined`. HTTP failures are now surfaced.
+- `pnpm deploy` is a pnpm built-in and fails for the API package; the docs now use
+  `pnpm run deploy`.
+- `@secretforge/api` compiles again (25 TypeScript errors). Handlers read request bodies through a
+  new `getValidated(c, schema)` helper typed by the route's Zod schema, `:id` path parameters go
+  through `requireParam`, the CORS preflight returns `c.body(null, 204)`, and `SecretAgent` uses the
+  `agents` `state` property with an explicit state type instead of the removed `getState()`.
+- `@secretforge/web` builds again: the landing page imported `lucide-react` and `@/components/ui/*`
+  files that were never committed. Added `lucide-react`, the `tailwindcss-animate` plugin the
+  Tailwind config already required, and small dependency-free `Badge`, `Button`, `Card` and `Input`
+  components. The `Github` brand icon (removed in `lucide-react` 1.x) was replaced by `GitBranch`.
+- `@secretforge/shield-action`'s test script no longer fails when there are no test files.
+
+### Security
+
+- `@secretforge/api` is marked `"private": true` so the Cloudflare Worker cannot be published to npm
+  by accident; it is deployed with `wrangler`.
+
+### Known limitations
+
+- The legacy `secretforge` binary (`packages/cli/src/index.ts`: `chat`, `request`, `rotate`,
+  `list`) does not send credentials, so against the authenticated API its provisioning commands
+  fail with an HTTP 401 until CLI authentication is added. The `sf` binary (`init`, `add`, `list`,
+  `inject`, `export`, `scan`, `hook`) works against the local vault and is unaffected.

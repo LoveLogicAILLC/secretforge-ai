@@ -231,7 +231,7 @@ pnpm --filter @secretforge/api build
 
 ```bash
 cd packages/api
-pnpm deploy
+pnpm run deploy
 ```
 
 ### Web (Vercel)

@@ -16,6 +16,11 @@ interface SecretMetadata {
   lastRotated?: string;
 }
 
+/** Shape of `POST /api/secrets`: the value is returned as an encrypted placeholder. */
+interface CreateSecretResponse {
+  secret: SecretMetadata & { id: string; userId: string };
+}
+
 interface MCPContext {
   projectPath: string;
   dependencies: Record<string, string>;
@@ -168,7 +173,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'create_secret': {
         const data = CreateSecretSchema.parse(args);
-        const secret = await createSecret(data);
+        const { secret } = await createSecret(data);
         return {
           content: [
             {
@@ -354,7 +359,9 @@ async function getGitRemote(projectPath: string): Promise<string | undefined> {
   }
 }
 
-async function createSecret(data: z.infer<typeof CreateSecretSchema>) {
+async function createSecret(
+  data: z.infer<typeof CreateSecretSchema>
+): Promise<CreateSecretResponse> {
   // Integrate with Cloudflare Workers API
   const response = await fetch('http://localhost:8787/api/secrets', {
     method: 'POST',
@@ -362,19 +369,24 @@ async function createSecret(data: z.infer<typeof CreateSecretSchema>) {
     body: JSON.stringify(data),
   });
 
-  return response.json() as Promise<any>;
+  if (!response.ok) {
+    throw new Error(`Secret provisioning request was rejected (HTTP ${response.status})`);
+  }
+
+  return (await response.json()) as CreateSecretResponse;
 }
 
 async function rotateSecret(secretId: string) {
-  await fetch(`http://localhost:8787/api/secrets/${secretId}/rotate`, {
+  await fetch(`http://localhost:8787/api/secrets/${encodeURIComponent(secretId)}/rotate`, {
     method: 'POST',
   });
 }
 
 async function searchDocumentation(service: string, query: string) {
-  const response = await fetch(
-    `http://localhost:8787/api/docs/search?service=${service}&q=${encodeURIComponent(query)}`
-  );
+  const url = new URL('http://localhost:8787/api/docs/search');
+  url.searchParams.set('service', service);
+  url.searchParams.set('q', query);
+  const response = await fetch(url);
   return response.json() as Promise<any>;
 }
 

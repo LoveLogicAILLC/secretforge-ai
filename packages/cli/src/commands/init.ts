@@ -47,7 +47,7 @@ export async function initCommand(): Promise<void> {
       },
     },
     {
-      type: 'list',
+      type: 'select',
       name: 'environment',
       message: 'Default environment:',
       choices: ['dev', 'staging', 'prod'],
@@ -73,7 +73,10 @@ export async function initCommand(): Promise<void> {
         exists = false;
       }
       if (!exists) {
-        await writeFile(keyPath, (await generateEncryptionKey()) + '\n', { mode: 0o600, flag: 'wx' });
+        await writeFile(keyPath, (await generateEncryptionKey()) + '\n', {
+          mode: 0o600,
+          flag: 'wx',
+        });
       }
       if (process.platform !== 'win32') await chmod(keyPath, 0o600);
     }

@@ -1,6 +1,8 @@
 {
   "name": "@secretforge/api",
   "version": "1.0.0",
+  "description": "Cloudflare Workers API for the SecretForge AI secret management platform (deployed with wrangler, not published to npm)",
+  "private": true,
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -26,5 +28,30 @@
     "typescript": "^5.9.3",
     "vitest": "^4.1.1",
     "wrangler": "^4.76.0"
-  }
+  },
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "api",
+    "secrets",
+    "key-management",
+    "security",
+    "ai",
+    "agents",
+    "hono",
+    "d1",
+    "kv",
+    "vectorize"
+  ],
+  "author": "LoveLogicAILLC",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LoveLogicAILLC/secretforge-ai.git",
+    "directory": "packages/api"
+  },
+  "bugs": {
+    "url": "https://github.com/LoveLogicAILLC/secretforge-ai/issues"
+  },
+  "homepage": "https://github.com/LoveLogicAILLC/secretforge-ai/tree/main/packages/api#readme"
 }

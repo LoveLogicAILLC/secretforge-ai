@@ -1,6 +1,7 @@
 {
   "name": "@secretforge/shared",
   "version": "1.0.0",
+  "description": "Shared types, validation schemas and the secret detection engine used by SecretForge AI packages",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,6 +30,29 @@
     }
   },
   "files": [
-    "dist"
-  ]
+    "dist",
+    "LICENSE"
+  ],
+  "keywords": [
+    "secrets",
+    "secret-detection",
+    "security",
+    "schemas",
+    "zod",
+    "shared"
+  ],
+  "author": "LoveLogicAILLC",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LoveLogicAILLC/secretforge-ai.git",
+    "directory": "packages/shared"
+  },
+  "bugs": {
+    "url": "https://github.com/LoveLogicAILLC/secretforge-ai/issues"
+  },
+  "homepage": "https://github.com/LoveLogicAILLC/secretforge-ai/tree/main/packages/shared#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }

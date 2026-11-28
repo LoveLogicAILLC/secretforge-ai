@@ -6,8 +6,10 @@ import ora from 'ora';
 import inquirer from 'inquirer';
 import { readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { parseDotenv, serializeEnvLine } from './format/dotenv.js';
 import { writePrivateFile } from './cli/vault.js';
+import { CLI_VERSION } from './commands/scan.js';
+import { parseDotenv, serializeEnvLine } from './format/dotenv.js';
+import { readProvisionResponse } from './provision.js';
 
 interface CLIContext {
   projectPath: string;
@@ -21,7 +23,7 @@ const AI_CONTEXT_FILE = '.secretforge-ai.json';
 const program = new Command();
 const ollama = new Ollama({ host: 'http://localhost:11434' });
 
-program.name('secretforge').description('AI-powered API key management CLI').version('1.0.0');
+program.name('secretforge').description('AI-powered API key management CLI').version(CLI_VERSION);
 
 // Initialize project
 program
@@ -108,29 +110,32 @@ program
   .action(async (service, options) => {
     const spinner = ora(`Provisioning ${service} API key...`).start();
 
-    const context = await loadContext();
-    const response = await fetch(`${context.apiEndpoint}/api/secrets`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        service,
-        environment: options.env,
-        scopes: options.scopes || [],
-        userId: context.userId,
-      }),
-    });
+    try {
+      const context = await loadContext();
+      const response = await fetch(`${context.apiEndpoint}/api/secrets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service,
+          environment: options.env,
+          scopes: options.scopes || [],
+          userId: context.userId,
+        }),
+      });
 
-    const data = (await response.json()) as any;
-    if (!data?.secret?.id || !data?.secret?.value) {
-      throw new Error('Invalid secret response');
+      const { id, value } = await readProvisionResponse(response);
+      spinner.succeed(`API key created: ${id}`);
+
+      // Update .env.local (git-ignored)
+      const envKey = `${service.toUpperCase()}_API_KEY`;
+      await updateEnvFile(envKey, value);
+
+      console.log(chalk.green(`\n✅ ${envKey} added to .env.local`));
+    } catch (error) {
+      spinner.fail(`Failed to provision ${service} API key`);
+      console.error(chalk.red(error instanceof Error ? error.message : String(error)));
+      process.exitCode = 1;
     }
-    spinner.succeed(`API key created: ${data.secret.id}`);
-
-    // Update .env file
-    const envKey = `${service.toUpperCase()}_API_KEY`;
-    await updateEnvFile(envKey, data.secret.value);
-
-    console.log(chalk.green(`\n✅ ${envKey} added to .env`));
   });
 
 // Rotate existing key
@@ -226,16 +231,13 @@ async function provisionKey(service: string, context: CLIContext) {
       }),
     });
 
-    const data = (await response.json()) as any;
-    if (!data?.secret?.value) {
-      throw new Error('Invalid secret response: missing secret value');
-    }
-    await updateEnvFile(`${service.toUpperCase()}_API_KEY`, data.secret.value);
+    const { value } = await readProvisionResponse(response);
+    await updateEnvFile(`${service.toUpperCase()}_API_KEY`, value);
 
     spinner.succeed(`${service} key provisioned`);
   } catch (error) {
     spinner.fail(`Failed to provision ${service} key`);
-    console.error(error);
+    console.error(chalk.red(error instanceof Error ? error.message : String(error)));
   }
 }
 

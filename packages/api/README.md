@@ -26,6 +26,7 @@ Edge-native API built with Hono framework, providing endpoints for secret manage
 - `POST /auth/signup` - Register a new account (forces `free` tier)
 - `POST /auth/login` - Authenticate with PBKDF2 hash verification and obtain JWT
 - `GET /auth/me` - Get current authenticated user profile
+
 ### Analysis
 
 - `POST /api/analyze` - Analyze project dependencies
@@ -58,7 +59,7 @@ pnpm dev
 pnpm build
 
 # Deploy to Cloudflare
-pnpm deploy
+pnpm run deploy
 ```
 
 ## Configuration

@@ -1,0 +1,44 @@
+{
+  "name": "@secretforge/lsp-server",
+  "version": "1.0.0",
+  "description": "SecretForge AI Language Server Protocol implementation for universal IDE support",
+  "main": "dist/server.js",
+  "types": "dist/server.d.ts",
+  "bin": {
+    "secretforge-lsp": "dist/server.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "dev": "tsc --watch",
+    "start": "node dist/server.js --stdio",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "lsp",
+    "language-server",
+    "secrets",
+    "security",
+    "ai",
+    "secret-detection",
+    "secretforge"
+  ],
+  "author": "LoveLogicAI LLC",
+  "license": "MIT",
+  "dependencies": {
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.6.1"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

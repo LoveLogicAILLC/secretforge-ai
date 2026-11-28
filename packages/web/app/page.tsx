@@ -4,7 +4,7 @@ import {
   CheckCircle2,
   Shield,
   Zap,
-  Github,
+  GitBranch,
   Terminal,
   Sparkles,
   ArrowRight,
@@ -76,7 +76,7 @@ export default function LandingPage() {
             npx @secretforge/cli init
           </Button>
           <Button size="lg" variant="outline" className="border-slate-700 text-lg px-8 py-6">
-            <Github className="mr-2" />
+            <GitBranch className="mr-2" />
             View on GitHub
           </Button>
         </div>
