@@ -87,17 +87,18 @@ connection.onInitialize((params: InitializeParams): InitializeResult => {
   };
 });
 
-connection.onInitialized(async () => {
+connection.onInitialized(() => {
   connection.console.log('SecretForge AI language server ready');
 
   // Detection is fully local, so an unreachable backend only limits the
   // AI-backed actions. Tell the user once rather than failing every command.
-  const healthy = await agentClient.isHealthy();
-  if (!healthy) {
-    connection.console.log(
-      'SecretForge backend unreachable — detection and local fixes still active'
-    );
-  }
+  void agentClient.isHealthy().then((healthy) => {
+    if (!healthy) {
+      connection.console.log(
+        'SecretForge backend unreachable — detection and local fixes still active'
+      );
+    }
+  });
 });
 
 // -------------------------------------------------------------- diagnostics
@@ -113,7 +114,7 @@ documents.onDidClose((event) => {
     pendingScans.delete(event.document.uri);
   }
   diagnosticsByUri.delete(event.document.uri);
-  connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] });
+  void connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] });
 });
 
 function scheduleScan(document: TextDocument): void {
@@ -180,7 +181,7 @@ function scanDocument(document: TextDocument): void {
   }
 
   diagnosticsByUri.set(document.uri, diagnostics);
-  connection.sendDiagnostics({ uri: document.uri, diagnostics });
+  void connection.sendDiagnostics({ uri: document.uri, diagnostics });
 }
 
 // ------------------------------------------------------------- code actions
@@ -363,7 +364,7 @@ async function validateSecret(secret: string) {
   return result;
 }
 
-async function rotateSecret(service: string) {
+function rotateSecret(service: string) {
   connection.window.showInformationMessage(
     `Rotation requested for ${service}. Confirm it in your SecretForge dashboard.`
   );
